@@ -39,11 +39,11 @@ def map_attire_description(attire, gender):
     elif attire == "business casual":
         return "a suit with no tie" if gender == "male" else "a business casual outfit"     # Updated description
     elif attire == "casual":
-        return "a t-shirt, a button-up shirt, a flannel, a sweater vest, or something currently trendy and fashionable"
-    elif attire == "medical":
-        return "modern medical attire, wearing a clean white lab coat over scrubs or business-casual medical clothing, with a stethoscope around their neck" # Removed unneeded description
-    elif attire == "scientist":
-        return "a white lab coat over casual-professional clothes, safety goggles on their head or eyes, and blue nitrile gloves"
+        return "a t-shirt or a button-up shirt or a flannel or a sweater vest, or something currently trendy and fashionable"
+    elif attire == "doctors": # UPDATED attire variable name from 'medical' to 'doctors'
+        return "a white lab coat over scrubs" # Removed unneeded description
+    elif attire == "clinician": # UPDATED attire variable name from 'scientist' to 'clinician' 
+        return "Modern medical scrubs" # UPDATED description of the clinician attire (e.g. nurses)  
     else:
         return attire
 
