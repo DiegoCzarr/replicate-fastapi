@@ -152,7 +152,7 @@ async def gerar_headshot(
     profession: str = Form(...),
     age: int = Form(...),
     gender: str = Form(...),
-    color: str = Form(...)           # Nome da cor
+    color: str = Form(None)          # Deixa opcional
 ):
     try:
         clothing_list = json.loads(clothing)
@@ -160,6 +160,10 @@ async def gerar_headshot(
 
         if not clothing_list or not background_list:
             return JSONResponse(status_code=400, content={"erro": "clothing ou background vazio."})
+
+        # Se não foi enviada cor, define padrão
+        if not color:
+            color = "Black"
 
         if color not in color_choices:
             return JSONResponse(status_code=400, content={"erro": f"Cor '{color}' inválida."})
@@ -174,6 +178,7 @@ async def gerar_headshot(
         combinations = list(product(clothing_list, background_list))
 
         for idx, (clothe, bg) in enumerate(combinations):
+            # Passa o nome da cor (não o hex) para a descrição
             attire_desc = build_attire_description(clothe, gender, color)
             background_desc = build_background_description(bg)
 
@@ -196,11 +201,9 @@ async def gerar_headshot(
                     }
                 )
 
-            output_path = f"temp/{img_id}_output_{idx+1}.jpg"
-            with open(output_path, "wb") as f:
-                f.write(output.read())
-
-            image_url = f"{API_BASE_URL}/temp/{img_id}_output_{idx+1}.jpg"
+            # Aqui pode ser que o replicate retorne URL ou binário,
+            # verifique se precisa baixar ou já retorna link
+            image_url = output if isinstance(output, str) else output[0]
 
             images.append({
                 "url": image_url,
@@ -217,3 +220,4 @@ async def gerar_headshot(
         print("❌ Erro:", str(e))
         traceback.print_exc()
         return JSONResponse(status_code=500, content={"erro": str(e)})
+
