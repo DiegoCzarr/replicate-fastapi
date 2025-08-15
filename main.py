@@ -201,6 +201,17 @@ async def gerar_headshot(
                     }
                 )
 
+            # Tratamento seguro para diferentes formatos de retorno
+            if isinstance(output, str):
+                image_url = output
+            elif isinstance(output, list) and len(output) > 0:
+                image_url = output[0]
+            elif hasattr(output, "url"):
+                image_url = output.url
+            else:
+                raise ValueError(f"Formato de saída inesperado do replicate: {output}")
+
+
             # Aqui pode ser que o replicate retorne URL ou binário,
             # verifique se precisa baixar ou já retorna link
             image_url = output if isinstance(output, str) else output[0]
