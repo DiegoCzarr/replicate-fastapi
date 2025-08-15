@@ -214,7 +214,12 @@ async def gerar_headshot(
 
             # Aqui pode ser que o replicate retorne URL ou binário,
             # verifique se precisa baixar ou já retorna link
-            image_url = output if isinstance(output, str) else output[0]
+            # Se output for FileOutput, pega a URL diretamente
+            if hasattr(output, "url"):
+                image_url = output.url
+            else:
+                image_url = str(output)
+
 
             images.append({
                 "url": image_url,
