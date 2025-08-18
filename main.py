@@ -200,46 +200,36 @@ async def gerar_headshot(
                         "output_format": "jpg"
                     }
                 )
+            
+                # Polling até terminar
+                while prediction.status not in ["succeeded", "failed", "canceled"]:
+                    await asyncio.sleep(1)
+                    prediction.reload()
+            
+                if prediction.status != "succeeded":
+                    raise RuntimeError(f"Falha no Replicate: {prediction.status}")
+            
+                output = prediction.output
+            
+                # Tratamento seguro para diferentes formatos de retorno
+                if isinstance(output, str):
+                    image_url = output
+                elif isinstance(output, list) and len(output) > 0:
+                    image_url = output[0]
+                elif hasattr(output, "url"):
+                    image_url = output.url
+                else:
+                    raise ValueError(f"Formato de saída inesperado do replicate: {output}")
+            
+                images.append({
+                    "url": image_url,
+                    "attire": clothe,
+                    "background": bg,
+                    "color": color
+                })
+            
+                time.sleep(0.3)
 
-    # Polling até terminar
-    while prediction.status not in ["succeeded", "failed", "canceled"]:
-        await asyncio.sleep(1)
-        prediction.reload()
-
-    if prediction.status != "succeeded":
-        raise RuntimeError(f"Falha no Replicate: {prediction.status}")
-
-    output = prediction.output
-
-
-            # Tratamento seguro para diferentes formatos de retorno
-            if isinstance(output, str):
-                image_url = output
-            elif isinstance(output, list) and len(output) > 0:
-                image_url = output[0]
-            elif hasattr(output, "url"):
-                image_url = output.url
-            else:
-                raise ValueError(f"Formato de saída inesperado do replicate: {output}")
-
-
-            # Aqui pode ser que o replicate retorne URL ou binário,
-            # verifique se precisa baixar ou já retorna link
-            # Se output for FileOutput, pega a URL diretamente
-            if hasattr(output, "url"):
-                image_url = output.url
-            else:
-                image_url = str(output)
-
-
-            images.append({
-                "url": image_url,
-                "attire": clothe,
-                "background": bg,
-                "color": color
-            })
-
-            time.sleep(0.3)
 
         return {"images": images}
 
