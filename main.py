@@ -192,14 +192,25 @@ async def gerar_headshot(
             print(f"🔹 Prompt {idx+1}: {prompt}")
 
             with open(input_path, "rb") as image_file:
-                output = replicate.run(
-                    "black-forest-labs/flux-kontext-pro",
+                prediction = client.predictions.create(
+                    model="black-forest-labs/flux-kontext-pro",
                     input={
                         "prompt": prompt,
                         "input_image": image_file,
                         "output_format": "jpg"
                     }
                 )
+
+    # Polling até terminar
+    while prediction.status not in ["succeeded", "failed", "canceled"]:
+        await asyncio.sleep(1)
+        prediction.reload()
+
+    if prediction.status != "succeeded":
+        raise RuntimeError(f"Falha no Replicate: {prediction.status}")
+
+    output = prediction.output
+
 
             # Tratamento seguro para diferentes formatos de retorno
             if isinstance(output, str):
