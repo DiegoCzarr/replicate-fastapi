@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from itertools import product
 import replicate
+from replicate import Client
 import os
 import time
 import shutil
@@ -18,6 +19,12 @@ load_dotenv()
 app = FastAPI()
 
 API_BASE_URL = "https://replicate-fastapi.onrender.com"
+
+REPLICATE_API_TOKEN = os.getenv("REPLICATE_API_TOKEN")
+if not REPLICATE_API_TOKEN:
+    raise RuntimeError("⚠️ Variável de ambiente REPLICATE_API_TOKEN não encontrada")
+
+client = Client(api_token=REPLICATE_API_TOKEN)
 
 # CORS
 app.add_middleware(
