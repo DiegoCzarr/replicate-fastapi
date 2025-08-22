@@ -191,7 +191,7 @@ async def gerar_headshot(
             background_desc = build_background_description(bg)
 
             prompt = (
-                f"Create a professional headshot of this {gender} subject in professional studio lighting, "
+                f"Put this {gender} subject in professional studio lighting, "
                 f"wearing {attire_desc}, background is {background_desc}. "
                 f"Maintain precise replication of subject's pose, head tilt, and eye line, "
                 f"angle toward the camera, skin tone, and any jewelry."
