@@ -5,6 +5,7 @@ from fastapi.staticfiles import StaticFiles
 from itertools import product
 import replicate
 from replicate import Client
+from fastapi import Body
 import os
 import time
 import shutil
@@ -244,5 +245,53 @@ async def gerar_headshot(
     except Exception as e:
         print("❌ Erro:", str(e))
         traceback.print_exc()
+        return JSONResponse(status_code=500, content={"erro": str(e)})
+
+@app.post("/editar-imagem")
+async def editar_imagem(payload: dict = Body(...)):
+    try:
+        image_url = payload.get("image_url")
+        edit_type = payload.get("edit_type")
+
+        if not image_url or not edit_type:
+            return JSONResponse(status_code=400, content={"erro": "Parâmetros inválidos"})
+
+        # Define o prompt/transformação
+        if edit_type == "remove-bg":
+            prompt = "Remove the background of this image, keep only the subject."
+        elif edit_type == "blur-bg":
+            prompt = "Apply background blur, keep subject sharp."
+        elif edit_type == "resize":
+            prompt = "Resize this image to a square format, centered subject."
+        else:
+            return JSONResponse(status_code=400, content={"erro": "Tipo de edição inválido"})
+
+        prediction = client.predictions.create(
+            model="black-forest-labs/flux-kontext-pro",
+            input={
+                "prompt": prompt,
+                "input_image": image_url,
+                "output_format": "jpg"
+            }
+        )
+
+        while prediction.status not in ["succeeded", "failed", "canceled"]:
+            await asyncio.sleep(1)
+            prediction.reload()
+
+        if prediction.status != "succeeded":
+            raise RuntimeError("Falha ao editar imagem")
+
+        output = prediction.output
+        if isinstance(output, str):
+            edited_url = output
+        elif isinstance(output, list) and len(output) > 0:
+            edited_url = output[0]
+        else:
+            raise ValueError("Formato inesperado de saída")
+
+        return {"image_url": edited_url}
+
+    except Exception as e:
         return JSONResponse(status_code=500, content={"erro": str(e)})
 
