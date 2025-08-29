@@ -258,11 +258,11 @@ async def editar_imagem(payload: dict = Body(...)):
 
         # Define o prompt/transformação
         if edit_type == "remove-bg":
-            prompt = "Remove the background of this image, keep only the subject."
+            prompt = "Apply white background, keep only the subject."
         elif edit_type == "blur-bg":
             prompt = "Apply background blur, keep subject sharp."
         elif edit_type == "resize":
-            prompt = "Resize this image to a square format, centered subject."
+            prompt = "Resize this image to a 4:3 format, centered subject."
         else:
             return JSONResponse(status_code=400, content={"erro": "Tipo de edição inválido"})
 
