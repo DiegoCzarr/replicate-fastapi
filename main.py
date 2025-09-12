@@ -41,6 +41,27 @@ app.add_middleware(
 os.makedirs("temp", exist_ok=True)
 app.mount("/temp", StaticFiles(directory="temp"), name="temp")
 
+OPTIONS = {
+    "doctor": {
+        "clothes": ["Jaleco", "Scrub"],
+        "colors": ["Branco", "Azul", "Verde Hospitalar"],
+        "backgrounds": ["Clínica", "Escritório Médico", "Hospital"]
+    },
+    "engineer": {
+        "clothes": ["Capacete", "Colete de Segurança", "Camisa Polo"],
+        "colors": ["Laranja", "Azul", "Cinza"],
+        "backgrounds": ["Obra", "Escritório Corporativo", "Laboratório"]
+    },
+    "headshot": {
+        "clothes": ["Terno", "Blazer", "Camisa Social"],
+        "colors": ["Preto", "Cinza", "Azul Marinho"],
+        "backgrounds": ["Neutro", "Escritório Moderno", "Biblioteca"]
+    }
+}
+
+@app.get("/options")
+def get_options(photo_type: str):
+    return OPTIONS.get(photo_type, {})
 # === MATRIZ DE ROUPAS ===
 attire_matrix = {
     "Business Professional": {
