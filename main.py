@@ -69,7 +69,7 @@ attire_matrix = {
         "woman": ["{color} blouse with a dark suit"],
         "non-binary": ["dark suit with a {color} button-down shirt and tie"]
     },
-    "Business Casual": {
+    "business-casual": {
         "man": ["dark suit with a {color} button-down shirt and no tie"],
         "woman": ["{color} silk blouse"],
         "non-binary": ["dark suit with a {color} button-down shirt and no tie"]
