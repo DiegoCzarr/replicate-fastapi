@@ -183,7 +183,7 @@ async def gerar_headshot(
     color: str = Form(None)          # Deixa opcional
 ):
     try:
-        clothing_value = clothing
+        clothing_value = clothing.strip()
         background_list = json.loads(background)
 
         if not clothing_value or not background_list:
@@ -203,7 +203,9 @@ async def gerar_headshot(
             shutil.copyfileobj(image.file, f)
 
         images = []
+        # Só um clothing fixo, várias combinações com os backgrounds
         combinations = [(clothing_value, bg) for bg in background_list]
+
 
         for idx, (clothe, bg) in enumerate(combinations):
             # Passa o nome da cor (não o hex) para a descrição
