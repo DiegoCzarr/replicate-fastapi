@@ -179,16 +179,14 @@ async def gerar_headshot(
     image: UploadFile = File(...),
     clothing: str = Form(...),       # Lista JSON
     background: str = Form(...),     # Lista JSON
-    profession: str = Form(...),
-    age: int = Form(...),
     gender: str = Form(...),
     color: str = Form(None)          # Deixa opcional
 ):
     try:
-        clothing_list = json.loads(clothing)
+        clothing_value = clothing
         background_list = json.loads(background)
 
-        if not clothing_list or not background_list:
+        if not clothing_value or not background_list:
             return JSONResponse(status_code=400, content={"erro": "clothing ou background vazio."})
 
         # Se não foi enviada cor, define padrão
@@ -205,7 +203,7 @@ async def gerar_headshot(
             shutil.copyfileobj(image.file, f)
 
         images = []
-        combinations = list(product(clothing_list, background_list))
+        combinations = [(clothing_value, bg) for bg in background_list]
 
         for idx, (clothe, bg) in enumerate(combinations):
             # Passa o nome da cor (não o hex) para a descrição
