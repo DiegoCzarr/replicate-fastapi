@@ -120,6 +120,13 @@ background_matrix = {
     "Corporate Office": [
         "a bright and modern corporate office overlooking the city"
     ],
+
+    "cafe": [
+        "a picturesque view inside of a chic café with plants and wood accents.",
+        "a picturesque view inside a Parisian café with a counter with baked goods on display, tables and chairs, and view of the city outside the windows.",
+        "a realistic view inside a modern café with exposed brick, modern furniture, warm lighting, and a counter with baked goods on display."
+    ],
+
     "Natural Outdoors": [
         "a picturesque view in front of snow-capped mountains with a clear blue sky",
         "a picturesque view in front of a golden hour sunlight over rolling hills.",
