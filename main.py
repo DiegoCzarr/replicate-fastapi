@@ -74,7 +74,7 @@ attire_matrix = {
         "woman": ["{color} silk blouse"],
         "non-binary": ["dark suit with a {color} button-down shirt and no tie"]
     },
-    "Casual": {
+    "casual": {
         "man": [
             "{color} t-shirt",
             "{color} hoodie",
@@ -239,7 +239,7 @@ background_matrix = {
         "a picturesque view of an open air fitness studio, with plyometric workout equipment in the background."
       ],
     
-      "construction-site": [
+      "construction": [
         "a picturesque view of the inside of an outdoors construction site with equipment blurred in the background",
         "a picturesque view of the inside of an industrial facility with equipment blurred in the background"
       ],
