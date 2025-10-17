@@ -309,10 +309,10 @@ def build_background_description(background):
 @app.post("/gerar-headshot")
 async def gerar_headshot(
     image: UploadFile = File(...),
-    clothing: str = Form(...),       # Lista JSON
-    background: str = Form(...),     # Lista JSON
+    clothing: str = Form(...),
+    background: str = Form(...),
     gender: str = Form(...),
-    color: str = Form(None)          # Deixa opcional
+    color: str = Form(None)
 ):
     try:
         clothing_value = clothing.strip()
@@ -321,7 +321,6 @@ async def gerar_headshot(
         if not clothing_value or not background_list:
             return JSONResponse(status_code=400, content={"erro": "clothing ou background vazio."})
 
-        # Se não foi enviada cor, define padrão
         if not color:
             color = "Black"
 
@@ -334,46 +333,57 @@ async def gerar_headshot(
         with open(input_path, "wb") as f:
             shutil.copyfileobj(image.file, f)
 
-        images = []
-        # Só um clothing fixo, várias combinações com os backgrounds
-        combinations = [(clothing_value, bg) for bg in background_list]
+        # === NOVO: Dicionário de resultados categorizados ===
+        categorized_results = {}
 
+        # === Para cada background selecionado ===
+        for bg in background_list:
+            background_options = background_matrix.get(bg)
+            if not background_options:
+                print(f"⚠️ Nenhuma descrição encontrada para background: {bg}")
+                continue
 
-        for idx, (clothe, bg) in enumerate(combinations):
-            # Passa o nome da cor (não o hex) para a descrição
-            attire_desc = build_attire_description(clothe, gender, color)
-            background_desc = build_background_description(bg)
-
-            prompt = (
-                f"Put this {gender} subject in professional studio lighting, "
-                f"wearing {attire_desc}, background is {background_desc}. "
-                f"Maintain precise replication of subject's pose, head tilt, and eye line, "
-                f"angle toward the camera, skin tone, and any jewelry."
+            # Garante no máximo 5 descrições únicas (ou repete se tiver menos)
+            descriptions = (
+                random.sample(background_options, min(5, len(background_options)))
+                if len(background_options) >= 5
+                else [random.choice(background_options) for _ in range(5)]
             )
 
-            print(f"🔹 Prompt {idx+1}: {prompt}")
+            categorized_results[bg] = []
 
-            with open(input_path, "rb") as image_file:
-                prediction = client.predictions.create(
-                    model="black-forest-labs/flux-kontext-pro",
-                    input={
-                        "prompt": prompt,
-                        "input_image": image_file,
-                        "output_format": "jpg"
-                    }
+            # === Gera 5 imagens para este background ===
+            for desc_idx, bg_description in enumerate(descriptions):
+                attire_desc = build_attire_description(clothing_value, gender, color)
+
+                prompt = (
+                    f"Professional {gender} portrait photo, wearing {attire_desc}, "
+                    f"background is {bg_description}. Maintain exact likeness, pose, lighting, "
+                    f"and facial features. Professional headshot style, 8k detail, studio lighting."
                 )
-            
-                # Polling até terminar
+
+                print(f"🔹 [{bg}] Prompt {desc_idx+1}: {prompt}")
+
+                with open(input_path, "rb") as image_file:
+                    prediction = client.predictions.create(
+                        model="black-forest-labs/flux-kontext-pro",
+                        input={
+                            "prompt": prompt,
+                            "input_image": image_file,
+                            "output_format": "jpg"
+                        }
+                    )
+
+                # Polling até finalizar
                 while prediction.status not in ["succeeded", "failed", "canceled"]:
                     await asyncio.sleep(1)
                     prediction.reload()
-            
+
                 if prediction.status != "succeeded":
-                    raise RuntimeError(f"Falha no Replicate: {prediction.status}")
-            
+                    print(f"❌ Falha no background {bg} ({desc_idx+1}): {prediction.status}")
+                    continue
+
                 output = prediction.output
-            
-                # Tratamento seguro para diferentes formatos de retorno
                 if isinstance(output, str):
                     image_url = output
                 elif isinstance(output, list) and len(output) > 0:
@@ -381,19 +391,18 @@ async def gerar_headshot(
                 elif hasattr(output, "url"):
                     image_url = output.url
                 else:
-                    raise ValueError(f"Formato de saída inesperado do replicate: {output}")
-            
-                images.append({
+                    raise ValueError(f"Formato inesperado de saída: {output}")
+
+                categorized_results[bg].append({
                     "url": image_url,
-                    "attire": clothe,
-                    "background": bg,
-                    "color": color
+                    "attire": clothing_value,
+                    "color": color,
+                    "background_description": bg_description
                 })
-            
-                time.sleep(0.3)
 
+                await asyncio.sleep(0.3)  # evita rate-limit
 
-        return {"images": images}
+        return {"results": categorized_results}
 
     except Exception as e:
         print("❌ Erro:", str(e))
