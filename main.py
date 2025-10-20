@@ -309,8 +309,8 @@ def build_background_description(background):
 @app.post("/gerar-headshot")
 async def gerar_headshot(
     image: UploadFile = File(...),
-    clothing: str = Form(...),       # Lista JSON
-    background: str = Form(...),     # Lista JSON
+    clothing: str = Form(...),       # Lista JSON (string)
+    background: str = Form(...),     # Lista JSON (string)
     gender: str = Form(...),
     color: str = Form(None)          # Deixa opcional
 ):
@@ -321,13 +321,14 @@ async def gerar_headshot(
         if not clothing_value or not background_list:
             return JSONResponse(status_code=400, content={"erro": "clothing ou background vazio."})
 
-        # Se não foi enviada cor, define padrão
+        # Define cor padrão se não enviada
         if not color:
             color = "Black"
 
         if color not in color_choices:
             return JSONResponse(status_code=400, content={"erro": f"Cor '{color}' inválida."})
 
+        # salva arquivo recebido
         file_ext = image.filename.split(".")[-1]
         img_id = str(uuid4())
         input_path = f"temp/{img_id}.{file_ext}"
@@ -335,63 +336,103 @@ async def gerar_headshot(
             shutil.copyfileobj(image.file, f)
 
         images = []
-        # Só um clothing fixo, várias combinações com os backgrounds
-        combinations = [(clothing_value, bg) for bg in background_list]
+        MODEL_ID = "black-forest-labs/flux-kontext-pro"
 
+        # Para cada background selecionado, gerar exatamente 5 imagens
+        for bg in background_list:
+            bg_key = bg  # assumimos bg corresponde a chave do background_matrix
+            variations = background_matrix.get(bg_key, [bg_key])
 
-        for idx, (clothe, bg) in enumerate(combinations):
-            # Passa o nome da cor (não o hex) para a descrição
-            attire_desc = build_attire_description(clothe, gender, color)
-            background_desc = build_background_description(bg)
+            # Se houver >=5 variações, escolhe 5 aleatórias sem repetição
+            # Se houver <5, embaralha e repete até completar 5 (mantendo alguma variabilidade)
+            chosen_variations = []
+            if len(variations) >= 5:
+                # sample sem repetição
+                chosen_variations = random.sample(variations, 5)
+            else:
+                # preencha repetindo/embaralhando até ter 5
+                pool = variations.copy()
+                while len(chosen_variations) < 5:
+                    random.shuffle(pool)
+                    for v in pool:
+                        if len(chosen_variations) >= 5:
+                            break
+                        chosen_variations.append(v)
+                # garante exatamente 5
+                chosen_variations = chosen_variations[:5]
 
-            prompt = (
-                f"Put this {gender} subject in professional studio lighting, "
-                f"wearing {attire_desc}, background is {background_desc}. "
-                f"Maintain precise replication of subject's pose, head tilt, and eye line, "
-                f"angle toward the camera, skin tone, and any jewelry."
-            )
+            # Gera uma imagem para cada variação escolhida (5 por background)
+            for idx, variation in enumerate(chosen_variations):
+                attire_desc = build_attire_description(clothing_value, gender, color)
+                background_desc = variation  # já é a string descritiva do background
 
-            print(f"🔹 Prompt {idx+1}: {prompt}")
-
-            with open(input_path, "rb") as image_file:
-                prediction = client.predictions.create(
-                    model="black-forest-labs/flux-kontext-pro",
-                    input={
-                        "prompt": prompt,
-                        "input_image": image_file,
-                        "output_format": "jpg"
-                    }
+                prompt = (
+                    f"Put this {gender} subject in professional studio lighting, "
+                    f"wearing {attire_desc}, background is {background_desc}. "
+                    f"Maintain precise replication of subject's pose, head tilt, and eye line, "
+                    f"angle toward the camera, skin tone, and any jewelry."
                 )
-            
-                # Polling até terminar
-                while prediction.status not in ["succeeded", "failed", "canceled"]:
-                    await asyncio.sleep(1)
-                    prediction.reload()
-            
-                if prediction.status != "succeeded":
-                    raise RuntimeError(f"Falha no Replicate: {prediction.status}")
-            
-                output = prediction.output
-            
-                # Tratamento seguro para diferentes formatos de retorno
-                if isinstance(output, str):
-                    image_url = output
-                elif isinstance(output, list) and len(output) > 0:
-                    image_url = output[0]
-                elif hasattr(output, "url"):
-                    image_url = output.url
-                else:
-                    raise ValueError(f"Formato de saída inesperado do replicate: {output}")
-            
-                images.append({
-                    "url": image_url,
-                    "attire": clothe,
-                    "background": bg,
-                    "color": color
-                })
-            
-                time.sleep(0.3)
 
+                print(f"🔹 Generating for background '{bg}' (variation {idx+1}/5): {background_desc}")
+                with open(input_path, "rb") as image_file:
+                    prediction = client.predictions.create(
+                        model=MODEL_ID,
+                        input={
+                            "prompt": prompt,
+                            "input_image": image_file,
+                            "output_format": "jpg"
+                        }
+                    )
+
+                    # Polling até terminar
+                    while prediction.status not in ["succeeded", "failed", "canceled"]:
+                        await asyncio.sleep(1)
+                        prediction.reload()
+
+                    if prediction.status != "succeeded":
+                        # registra e avança (ou, se preferir, pode abortar tudo)
+                        print(f"⚠️ Prediction status for bg={bg}, var='{variation}': {prediction.status}")
+                        # opcional: adicionar objeto com erro
+                        images.append({
+                            "url": None,
+                            "attire": clothing_value,
+                            "background": bg,
+                            "variation": variation,
+                            "color": color,
+                            "status": prediction.status
+                        })
+                        continue
+
+                    output = prediction.output
+
+                    # normaliza formato de saída como antes
+                    if isinstance(output, str):
+                        image_url = output
+                    elif isinstance(output, list) and len(output) > 0:
+                        image_url = output[0]
+                    elif hasattr(output, "url"):
+                        image_url = output.url
+                    else:
+                        raise ValueError(f"Formato de saída inesperado do replicate: {output}")
+
+                    images.append({
+                        "url": image_url,
+                        "attire": clothing_value,
+                        "background": bg,
+                        "variation": variation,
+                        "color": color,
+                        "status": "succeeded"
+                    })
+
+                # pequeno delay para não sobrecarregar (opcional)
+                time.sleep(0.2)
+
+        # limpa arquivo temporário
+        try:
+            if os.path.exists(input_path):
+                os.remove(input_path)
+        except Exception:
+            pass
 
         return {"images": images}
 
@@ -399,6 +440,7 @@ async def gerar_headshot(
         print("❌ Erro:", str(e))
         traceback.print_exc()
         return JSONResponse(status_code=500, content={"erro": str(e)})
+
 
 @app.post("/editar-imagem")
 async def editar_imagem(payload: dict = Body(...)):
