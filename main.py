@@ -279,12 +279,13 @@ background_matrix = {
 
 # === CORES ===
 color_choices = {
-    "navy blue": "#1A2B4C",
-    "charcoal gray": "#36454F",
+    "navy": "#1A2B4C",
+    "charcoal": "#36454F",
+    "gray": "D3D3D3",
     "black": "#000000",
     "white": "#FFFFFF",
-    "light blue": "#ADD8E6",
-    "pale gray": "#D3D3D3",
+    "blue": "#ADD8E6",
+    "tan": "#C3B091",
     "beige": "#800020",
     "burgundy": "#1A2B4C",
     "emerald Green": "#50C878",
