@@ -279,16 +279,16 @@ background_matrix = {
 
 # === CORES ===
 color_choices = {
-    "Navy Blue": "#1A2B4C",
-    "Charcoal Gray": "#36454F",
-    "Black": "#000000",
-    "White": "#FFFFFF",
-    "Light Blue": "#ADD8E6",
-    "Pale Gray": "#D3D3D3",
-    "Beige": "#800020",
-    "Burgundy": "#1A2B4C",
-    "Emerald Green": "#50C878",
-    "Soft Pink": "#F4C2C2"
+    "navy blue": "#1A2B4C",
+    "charcoal gray": "#36454F",
+    "black": "#000000",
+    "white": "#FFFFFF",
+    "light blue": "#ADD8E6",
+    "pale gray": "#D3D3D3",
+    "beige": "#800020",
+    "burgundy": "#1A2B4C",
+    "emerald Green": "#50C878",
+    "soft pink": "#F4C2C2"
 }
 
 def build_attire_description(attire, gender, color_name):
