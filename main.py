@@ -124,7 +124,9 @@ background_matrix = {
     "cafe": [
         "a picturesque view inside of a chic café with plants and wood accents.",
         "a picturesque view inside a Parisian café with a counter with baked goods on display, tables and chairs, and view of the city outside the windows.",
-        "a realistic view inside a modern café with exposed brick, modern furniture, warm lighting, and a counter with baked goods on display."
+        "a realistic view inside a modern café with exposed brick, modern furniture, warm lighting, and a counter with baked goods on display.",
+        "a picturesque view inside a cozy, artisanal cafe with vintage wooden tables, soft natural light streaming through a window, and a display of freshly roasted coffee beans or unique pastries softly blurred in the background.",
+        "a picturesque view inside a contemporary minimalist cafe with clean lines, industrial concrete elements, and a single, strategically placed modern art piece on a wall softly blurred in the background."
     ],
 
     "natural-outdoors": [
@@ -154,18 +156,26 @@ background_matrix = {
     "studio": [
         "a neutral light grey professional studio photo background",
         "a dark gray professional studio photo background",
-        "a dark navy professional studio background"
+        "a dark navy professional studio background",
+        "a light professional studio background with a pattern.",
+        "a dark professional studio background with a pattern."
     ],
 
       "soft-lighting": [
-        "a soft white gradient background."
+        "a soft white gradient background.",
+        "a soft off-white gradient background.",
+        "a soft light gray gradient background.",
+        "a soft dark gray gradient background.",
+        "a soft light blue gradient background."
       ],
     
       "modern-office": [
         "a picturesque view of the inside a bright and modern corporate high-rise office overlooking the city.",
         "a picturesque view of the inside of a corporate boardroom with sleek design.",
         "a picturesque view of the inside of a modern office with glass walls and city view.",
-        "a realistic view of a an office floor with open cubicles."
+        "a realistic view of a an office floor with open cubicles.",
+        "a realistic view of an office floor with open cubicles.",
+        "a picturesque view of the inside of a creative workspace with whiteboard, sticky notes, and open layout softly blurred"
       ],
     
       "urban": [
@@ -181,7 +191,9 @@ background_matrix = {
       "beach": [
         "a picturesque view in front of ocean waves with soft pastel sunset.",
         "a picturesque view in front of a rocky coastline with tidepools by the water.",
-        "a picturesque view of a hawaiian beach with natural trees and plants."
+        "a picturesque view of a hawaiian beach with natural trees and plants.",
+        "a picturesque view of a rugged, windswept coastline with dramatic rock formations, crashing white-capped waves, and sparse, hardy coastal vegetation.",
+        "a picturesque view of a calm, secluded beach cove with smooth pebbles, crystal-clear shallow water, and dense green foliage on the cliffs above softly blurred in the background."
       ],
     
       "nature": [
@@ -195,65 +207,82 @@ background_matrix = {
     
       "indoors": [
         "a picturesque view of the inside of an industrial loft with exposed brick and steel beams.",
-        "a picturesque view of the inside of a minimalist studio with soft natural light."
+        "a picturesque view of the inside of a minimalist studio with soft natural light.",
+        "a picturesque view of the inside of a luxury hotel lobby interior with marble flooring and ambient golden lighting.",
+        "a picturesque view of the inside of a modern penthouse apartment with panoramic windows and city view blurred behind."
       ],
     
       "restaurant": [
         "a picturesque view inside of a fine dining establishment with cozy lighting and clean, modern furniture, with a large window opening out to a view below.",
         "a picturesque view inside of a trendy fusion bar and restaurant that is naturally lit, with modern fixtures and lighting.",
-        "a picturesque view inside the dining area of a clean and hyper modern contemporary restaurant with a long horizontal window that shows a peek inside the kitchen."
+        "a picturesque view inside the dining area of a clean and hyper modern contemporary restaurant with a long horizontal window that shows a peek inside the kitchen.",
+        "a picturesque view inside of a high-end restaurant with moody lighting, warm wood tones, and plush seating softly out of focus",
+        "a picturesque view inside of a coastal restaurant with large windows, beach view, and breezy neutral tones."
       ],
     
       "museum": [
         "a picturesque view of the inside a world famous museum with artwork in the background",
         "a picturesque view of the inside of an art gallery with clean white walls.",
-        "a realistic view of a contemporary art museum, with a series of stainless steel avant garde sculptures on display."
+        "a realistic view of a contemporary art museum, with a series of stainless steel avant garde sculptures on display.",
+        "a picturesque view inside of a modern art gallery with concrete floors, bright ceiling lights, and colorful modern art installations",
+        "a picturesque view inside of a natural history museum with dinosaur skeletons and dramatic spotlighting blurred in background"
       ],
     
       "legal-office": [
         "a picturesque view of the inside a legal office with legal books on a shelf blurred in the background.",
-        "a realistic view of a small, modern office meeting room, enclosed by glass walls, surrounded by bookshelves with legal books."
+        "a realistic view of a small, modern office meeting room, enclosed by glass walls, surrounded by bookshelves with legal books.",
+        "a picturesque view of the inside of an old-world legal chamber with heavy wood furniture, soft yellow lighting, and a subtle vignette",
+        "a picturesque view of the inside of a traditional law office interior with dark mahogany furniture, green banker’s lamp, and rows of old law books.",
+        "a picturesque view of the inside of an elegant vintage study with wood paneling, leather chairs, and stacks of legal volumes softly blurred."
       ],
     
       "library": [
         "a picturesque view of the inside of a cozy library with warm lighting and bookshelves.",
         "a realistic view of a modern library, with a window for natural lighting and warm interior lighting and shelves of books, and a small seating area for readers.",
-        "a realistic view of softly blurred corner of a library featuring a classic leather armchair, a small side table, and shelves of books that conveys a cozy, intellectual atmosphere."
-      ],
-    
-      "cafe": [
-        "a picturesque view inside of a chic café with plants and wood accents.",
-        "a picturesque view inside a Parisian café with a counter with baked goods on display, tables and chairs, and view of the city outside the windows.",
-        "a realistic view inside a modern café with exposed brick, modern furniture, warm lighting, and a counter with baked goods on display."
+        "a realistic view of softly blurred corner of a library featuring a classic leather armchair, a small side table, and shelves of books that conveys a cozy, intellectual atmosphere.",
+        "a picturesque view of the inside of a university study hall with high ceilings, rows of bookshelves, and warm afternoon light",
+        "a picturesque view of the inside of an old library interior with dust particles in sunlight, creating a timeless academic mood."
       ],
     
       "medical": [
         "a picturesque view of the inside of a clean and modern medical research setting, with lab equipment blurred in the background.",
-        "a modern hospital setting with an admitting desk and waiting room, with contemporary furniture."
+        "a modern hospital setting with an admitting desk and waiting room, with contemporary furniture.",
+        "a picturesque view of the inside of a modern hospital setting with an admitting desk and waiting room, with contemporary furniture.",
+        "a picturesque view of the inside of a professional consultation room with anatomical charts and a tidy white countertop.",
+        "a picturesque view of the inside of a pediatric office with friendly decor, bright colors, and welcoming atmosphere.",
+        "a picturesque view of an atrium of a modern research hospital."
       ],
     
       "gym": [
         "a picturesque view of the inside of a classic gym studio, with workout equipment blurred in the background.",
         "a picturesque view of the inside of a pilates classroom with equipment blurred in the background.",
         "a picturesque view of the inside of a yoga studio.",
-        "a picturesque view of an open air fitness studio, with plyometric workout equipment in the background."
+        "a picturesque view of an open air fitness studio, with plyometric workout equipment in the background.",
+        "a picturesque view of the inside of a Crossfit gym with people working out in the background."
       ],
     
       "construction": [
         "a picturesque view of the inside of an outdoors construction site with equipment blurred in the background",
-        "a picturesque view of the inside of an industrial facility with equipment blurred in the background"
+        "a picturesque view of the inside of an industrial facility with equipment blurred in the background",
+        "a picturesque view of an architectural blueprint station on a construction site, with rolled plans and a hard hat subtly blurred on a temporary table in the background, emphasizing planning and design.",
+        "a picturesque view of the inside of an industrial facility with equipment blurred in the background",
+        "a picturesque view of a high-rise construction site from an elevated perspective, showing a city skyline in the distant, soft focus, and scaffolding or structural elements up close but blurred in the background."
       ],
     
       "classroom": [
         "a picturesque view of the inside of a grade school classroom with desks and a whiteboard blurred in the background",
         "a picturesque view of the inside of a high school class room with desks and maps on the wall",
-        "a realistic view inside of a university lecture hall with cozy lighting."
+        "a realistic view inside of a university lecture hall with cozy lighting.",
+        "a picturesque view inside of a university science department lab with whiteboards covered in equations, stacked scientific journals, and a model of an atom or DNA helix softly blurred in the background.",
+        "a picturesque view inside of a STEM-focused classroom with lab tables, laptops, and whiteboards softly out of focus."
       ],
     
       "real-estate": [
         "a picturesque view of a suburban neighborhood with houses blurred in the background.",
         "a picturesque view of a house with a “Sold” sign in front.",
-        "a modern, airy dining room with natural lighting, and a large island and kitchen softly blurred in the background."
+        "a modern, airy dining room with natural lighting, and a large island and kitchen softly blurred in the background.",
+        "a picturesque view of a luxury open-concept home interior with marble floors, pendant lighting, and panoramic glass walls.",
+        "a picturesque view of a luxury home exterior with blurred “For Sale” sign, manicured lawn, and blue-sky background."
       ],
     
       "music-studio": [
@@ -267,13 +296,17 @@ background_matrix = {
       "home-office": [
         "a picturesque view of the inside of a home office with stylish décor and greenery.",
         "a picturesque view of the inside of a clean home office with bookshelves, a desk, and a computer monitor softly blurred in the background.",
-        "a picturesque view of the inside of a modern home office with tidy desk setup, neutral walls, and natural light from a nearby window"
+        "a picturesque view of the inside of a modern home office with tidy desk setup, neutral walls, and natural light from a nearby window",
+        "a picturesque view of the inside of a contemporary home office set up in a small nook. Include bookshelves, a keyboard, monitor, and a Herman Miller chair.",
+        "a picturesque view of the inside of a home office set up inside an upstairs loft. Include houseplants, bookshelves, and a desk and monitor. Include contemporary furnishings."
       ],
     
       "science-lab": [
         "a picturesque view of the inside of a bright modern laboratory, shelves of glass beakers and microscopes in soft focus behind them.",
         "a picturesque view of the inside of a clean white laboratory background with test tubes, lab coats, and scientific equipment slightly blurred.",
-        "a realistic view of the inside of a clean biotech laboratory background with test equipment, computers, and a working counter."
+        "a realistic view of the inside of a clean biotech laboratory background with test equipment, computers, and a working counter.",
+        "a picturesque view of the inside of a high-tech physics laboratory with complex electronic equipment, suggesting advanced research.",
+        "a picturesque view of the inside of an environmental science lab with soil samples, water testing kits, and charts or maps softly blurred on a workbench in the background, suggesting a focus on nature and data."
       ]
 }
 
