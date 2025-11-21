@@ -12,10 +12,15 @@ os.environ["REPLICATE_API_TOKEN"] = os.getenv("REPLICATE_API_TOKEN")
 
 app = FastAPI()
 
+origins = [
+    "https://www.jobodega.com/text-to-video",
+    "https://www.jobodega.com/text-to-video",
+]
+
 # Allow Webflow frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],   # coloque seu domínio Webflow se quiser limitar
+    allow_origins=origins,   # coloque seu domínio Webflow se quiser limitar
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
