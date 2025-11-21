@@ -4,6 +4,8 @@ import requests
 from fastapi import FastAPI, UploadFile, Form
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
+from fastapi.responses import JSONResponse
+
 
 load_dotenv()
 
@@ -16,7 +18,6 @@ origins = [
     "https://jobodega.webflow.io",
     "https://www.jobodega.com",
     "http://localhost:3000",
-    "*",  # (opcional durante testes)
 ]
 
 # Allow Webflow frontend
@@ -57,8 +58,22 @@ async def generate_video(
         }
     )
 
-    return {"prediction_id": prediction.id, "status": prediction.status}
+    response = {"prediction_id": prediction.id, "status": prediction.status}
+    return JSONResponse(content=response, headers={
+        "Access-Control-Allow-Origin": "https://jobodega.webflow.io",
+        "Access-Control-Allow-Credentials": "true"
+    })
 
+@app.options("/{path:path}")
+async def options_handler(path: str):
+    return JSONResponse(
+        content={"message": "ok"},
+        headers={
+            "Access-Control-Allow-Origin": "https://jobodega.webflow.io",
+            "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type,Authorization",
+        }
+    )
 
 # ----------------------------
 #   POLLING
