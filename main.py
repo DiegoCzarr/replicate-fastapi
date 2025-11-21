@@ -30,31 +30,28 @@ app.add_middleware(
 # ----------------------------
 #   CREATE VIDEO PREDICTION
 # ----------------------------
+
 @app.post("/generate")
 async def generate_video(
     prompt: str = Form(...),
     aspect_ratio: str = Form("landscape"),
-    reference_file: UploadFile | None = None
+    input_reference: str | None = Form(None)
 ):
-
-    input_reference = None
-    if reference_file:
-        input_reference = reference_file.file
 
     prediction = replicate.predictions.create(
         model="openai/sora-2",
         input={
             "prompt": prompt,
             "aspect_ratio": aspect_ratio,
-            "input_reference": input_reference
+            "input_reference": input_reference  # agora é string ou None
         }
     )
 
-    # NÃO DEFINIR HEADERS DE CORS AQUI
     return {
         "prediction_id": prediction.id,
         "status": prediction.status
     }
+
 
 # ----------------------------
 #   POLLING
