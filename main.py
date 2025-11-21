@@ -35,16 +35,16 @@ app.add_middleware(
 async def generate_video(
     prompt: str = Form(...),
     aspect_ratio: str = Form("landscape"),
-    input_reference: str | None = Form(None)
 ):
+    # Monta o input SEM o campo "input_reference"
+    model_input = {
+        "prompt": prompt,
+        "aspect_ratio": aspect_ratio
+    }
 
     prediction = replicate.predictions.create(
         model="openai/sora-2",
-        input={
-            "prompt": prompt,
-            "aspect_ratio": aspect_ratio,
-            "input_reference": input_reference  # agora é string ou None
-        }
+        input=model_input
     )
 
     return {
