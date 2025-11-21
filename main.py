@@ -13,8 +13,10 @@ os.environ["REPLICATE_API_TOKEN"] = os.getenv("REPLICATE_API_TOKEN")
 app = FastAPI()
 
 origins = [
-    "https://www.jobodega.com/text-to-video",
-    "https://www.jobodega.com/text-to-video",
+    "https://jobodega.webflow.io",
+    "https://www.jobodega.com",
+    "http://localhost:3000",
+    "*",  # (opcional durante testes)
 ]
 
 # Allow Webflow frontend
