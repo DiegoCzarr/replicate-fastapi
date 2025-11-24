@@ -60,7 +60,24 @@ async def generate_video(
 async def prediction_status(prediction_id: str):
     prediction = replicate.predictions.get(prediction_id)
 
-    output_url = prediction.output[0] if prediction.output else None
+    output_url = None
+
+    # Caso seja dict
+    if isinstance(prediction.output, dict):
+        output_url = prediction.output.get("video") or prediction.output.get("output")
+
+    # Caso seja lista
+    elif isinstance(prediction.output, list) and len(prediction.output) > 0:
+
+        item = prediction.output[0]
+
+        if isinstance(item, dict):
+            output_url = item.get("video") or item.get("output")
+        else:
+            output_url = item  # se for URL direto
+
+    print("DEBUG OUTPUT:", prediction.output)
+    print("VIDEO URL:", output_url)
 
     return {
         "id": prediction.id,
@@ -68,6 +85,7 @@ async def prediction_status(prediction_id: str):
         "logs": prediction.logs,
         "output_url": output_url
     }
+
 
 # ----------------------------
 #   DOWNLOAD (opcional)
