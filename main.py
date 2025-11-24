@@ -61,22 +61,37 @@ async def prediction_status(prediction_id: str):
     prediction = replicate.predictions.get(prediction_id)
 
     output_url = None
+    output = prediction.output
 
-    # Caso seja dict
-    if isinstance(prediction.output, dict):
-        output_url = prediction.output.get("video") or prediction.output.get("output")
+    # output é STRING direta com URL
+    if isinstance(output, str):
+        if output.endswith(".mp4"):
+            output_url = output
 
-    # Caso seja lista
-    elif isinstance(prediction.output, list) and len(prediction.output) > 0:
+    # output é LISTA
+    elif isinstance(output, list):
+        for item in output:
+            if isinstance(item, str) and item.endswith(".mp4"):
+                output_url = item
+                break
+            if isinstance(item, dict):
+                url = item.get("video") or item.get("output") or item.get("url")
+                if isinstance(url, str) and url.endswith(".mp4"):
+                    output_url = url
+                    break
 
-        item = prediction.output[0]
+    # output é DICT
+    elif isinstance(output, dict):
+        url = (
+            output.get("video") or
+            output.get("output") or
+            output.get("url") or
+            output.get("output_video")
+        )
+        if isinstance(url, str) and url.endswith(".mp4"):
+            output_url = url
 
-        if isinstance(item, dict):
-            output_url = item.get("video") or item.get("output")
-        else:
-            output_url = item  # se for URL direto
-
-    print("DEBUG OUTPUT:", prediction.output)
+    print("DEBUG OUTPUT:", output)
     print("VIDEO URL:", output_url)
 
     return {
@@ -85,6 +100,7 @@ async def prediction_status(prediction_id: str):
         "logs": prediction.logs,
         "output_url": output_url
     }
+
 
 
 # ----------------------------
