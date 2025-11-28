@@ -35,12 +35,21 @@ app.add_middleware(
 async def generate_video(
     prompt: str = Form(...),
     aspect_ratio: str = Form("landscape"),
+    reference_file: UploadFile | None = None,
 ):
-    # Monta o input SEM o campo "input_reference"
+    # Se tiver imagem, convertemos para file object (para o Replicate fazer upload)
+    input_reference = None
+    if reference_file is not None:
+        input_reference = reference_file.file  # Replicate aceita arquivo "rb"
+
     model_input = {
         "prompt": prompt,
-        "aspect_ratio": aspect_ratio
+        "aspect_ratio": aspect_ratio,
     }
+
+    # Só adiciona input_reference se a imagem foi enviada
+    if input_reference:
+        model_input["input_reference"] = input_reference
 
     prediction = replicate.predictions.create(
         model="openai/sora-2",
@@ -51,6 +60,7 @@ async def generate_video(
         "prediction_id": prediction.id,
         "status": prediction.status
     }
+
 
 
 # ----------------------------
