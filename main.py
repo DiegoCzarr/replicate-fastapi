@@ -45,6 +45,7 @@ async def generate_video(
     model_input = {
         "prompt": prompt,
         "aspect_ratio": aspect_ratio,
+        "resolution": "1080p"
     }
 
     # Só adiciona input_reference se a imagem foi enviada
