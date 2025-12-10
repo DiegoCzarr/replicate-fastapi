@@ -27,33 +27,54 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ----------------------------
-#   CREATE VIDEO PREDICTION
-# ----------------------------
+# =====================================================
+#                CREATE VIDEO PREDICTION
+# =====================================================
 
 @app.post("/generate")
 async def generate_video(
     prompt: str = Form(...),
+
+    # NOVOS PARAMETROS
     aspect_ratio: str = Form("landscape"),
+    duration: str = Form(None),
+    quality: str = Form(None),
+
     reference_file: UploadFile | None = None,
 ):
-    # Se tiver imagem, convertemos para file object (para o Replicate fazer upload)
+    """
+    Recebe prompt, imagem opcional, e parâmetros do dropdown.
+    """
+
+    # Se tiver imagem, converte para file-like object (Replicate aceita)
     input_reference = None
     if reference_file is not None:
-        input_reference = reference_file.file  # Replicate aceita arquivo "rb"
+        input_reference = reference_file.file
 
+    # -----------------------------
+    # INPUT ENVIADO PARA O MODELO
+    # -----------------------------
     model_input = {
         "prompt": prompt,
         "aspect_ratio": aspect_ratio,
-        "resolution": "1080p"
+        "resolution": "1080p",     # padrão solicitado
     }
 
-    # Só adiciona input_reference se a imagem foi enviada
+    # Adiciona parâmetros SOMENTE se foram enviados
+    if duration:
+        model_input["duration"] = duration
+
+    if quality:
+        model_input["quality"] = quality
+
     if input_reference:
         model_input["input_reference"] = input_reference
 
+    # -----------------------------
+    # CRIA PREDIÇÃO
+    # -----------------------------
     prediction = replicate.predictions.create(
-        model="openai/sora-2",
+        model="openai/sora-2",   # seu modelo atual
         input=model_input
     )
 
@@ -63,10 +84,10 @@ async def generate_video(
     }
 
 
+# =====================================================
+#                       POLLING
+# =====================================================
 
-# ----------------------------
-#   POLLING
-# ----------------------------
 @app.get("/status/{prediction_id}")
 async def prediction_status(prediction_id: str):
     prediction = replicate.predictions.get(prediction_id)
@@ -74,12 +95,11 @@ async def prediction_status(prediction_id: str):
     output_url = None
     output = prediction.output
 
-    # output é STRING direta com URL
+    # output pode vir em vários formatos — tratamos todos
     if isinstance(output, str):
         if output.endswith(".mp4"):
             output_url = output
 
-    # output é LISTA
     elif isinstance(output, list):
         for item in output:
             if isinstance(item, str) and item.endswith(".mp4"):
@@ -91,13 +111,12 @@ async def prediction_status(prediction_id: str):
                     output_url = url
                     break
 
-    # output é DICT
     elif isinstance(output, dict):
         url = (
-            output.get("video") or
-            output.get("output") or
-            output.get("url") or
-            output.get("output_video")
+            output.get("video")
+            or output.get("output")
+            or output.get("url")
+            or output.get("output_video")
         )
         if isinstance(url, str) and url.endswith(".mp4"):
             output_url = url
@@ -113,10 +132,10 @@ async def prediction_status(prediction_id: str):
     }
 
 
+# =====================================================
+#                     DOWNLOAD OPCIONAL
+# =====================================================
 
-# ----------------------------
-#   DOWNLOAD (opcional)
-# ----------------------------
 @app.get("/download/{prediction_id}")
 async def download_prediction(prediction_id: str):
     prediction = replicate.predictions.get(prediction_id)
@@ -132,3 +151,4 @@ async def download_prediction(prediction_id: str):
         f.write(video_bytes)
 
     return {"file_path": file_path, "downloaded": True}
+
