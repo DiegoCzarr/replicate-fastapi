@@ -84,6 +84,40 @@ async def generate_video(
     }
 
 
+# ----------------------------
+#   NANO-BANANA (IMAGE GENERATION)
+# ----------------------------
+@app.post("/generate-image")
+async def generate_image(
+    prompt: str = Form(...),
+    quality: str = Form("standard"),
+    image_1: UploadFile | None = None,
+    image_2: UploadFile | None = None,
+    image_3: UploadFile | None = None,
+):
+    # Convert images to list
+    images = []
+    for img in [image_1, image_2, image_3]:
+        if img:
+            images.append(img.file)
+
+    model_input = {
+        "prompt": prompt,
+        "image_input": images,
+        "quality": quality     # exemplo de parâmetro extra
+    }
+
+    prediction = replicate.predictions.create(
+        model="google/nano-banana",
+        input=model_input
+    )
+
+    return {
+        "prediction_id": prediction.id,
+        "status": prediction.status
+    }
+
+
 # =====================================================
 #                       POLLING
 # =====================================================
@@ -97,12 +131,12 @@ async def prediction_status(prediction_id: str):
 
     # output pode vir em vários formatos — tratamos todos
     if isinstance(output, str):
-        if output.endswith(".mp4"):
+         if output.endswith(".mp4") or output.endswith(".jpg") or output.endswith(".png"):
             output_url = output
 
     elif isinstance(output, list):
         for item in output:
-            if isinstance(item, str) and item.endswith(".mp4"):
+            if isinstance(item, str) and item.endswith(".mp4") or item.endswith(".jpg") or item.endswith(".png"):
                 output_url = item
                 break
             if isinstance(item, dict):
