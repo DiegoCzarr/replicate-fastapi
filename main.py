@@ -13,7 +13,7 @@ os.environ["REPLICATE_API_TOKEN"] = os.getenv("REPLICATE_API_TOKEN")
 
 app = FastAPI()
 
-# CORS CORRETO
+# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -28,14 +28,14 @@ app.add_middleware(
 )
 
 # =====================================================
-#                CREATE VIDEO PREDICTION
+#                  SORA 2 - VIDEO
 # =====================================================
 
 @app.post("/generate")
 async def generate_video(
     prompt: str = Form(...),
 
-    # NOVOS PARAMETROS
+    # PARÂMETROS vindos dos dropdowns personalizados
     aspect_ratio: str = Form("landscape"),
     duration: str = Form(None),
     quality: str = Form(None),
@@ -43,24 +43,17 @@ async def generate_video(
     reference_file: UploadFile | None = None,
 ):
     """
-    Recebe prompt, imagem opcional, e parâmetros do dropdown.
+    Rota de geração de vídeo com Sora-2.
     """
 
-    # Se tiver imagem, converte para file-like object (Replicate aceita)
-    input_reference = None
-    if reference_file is not None:
-        input_reference = reference_file.file
+    input_reference = reference_file.file if reference_file else None
 
-    # -----------------------------
-    # INPUT ENVIADO PARA O MODELO
-    # -----------------------------
     model_input = {
         "prompt": prompt,
         "aspect_ratio": aspect_ratio,
-        "resolution": "1080p",     # padrão solicitado
+        "resolution": "1080p",   # qualidade padrão
     }
 
-    # Adiciona parâmetros SOMENTE se foram enviados
     if duration:
         model_input["duration"] = duration
 
@@ -70,11 +63,8 @@ async def generate_video(
     if input_reference:
         model_input["input_reference"] = input_reference
 
-    # -----------------------------
-    # CRIA PREDIÇÃO
-    # -----------------------------
     prediction = replicate.predictions.create(
-        model="openai/sora-2",   # seu modelo atual
+        model="openai/sora-2",
         input=model_input
     )
 
@@ -84,9 +74,10 @@ async def generate_video(
     }
 
 
-# ----------------------------
-#   NANO-BANANA (IMAGE GENERATION)
-# ----------------------------
+# =====================================================
+#                NANO-BANANA - IMAGEM
+# =====================================================
+
 @app.post("/generate-image")
 async def generate_image(
     prompt: str = Form(...),
@@ -95,16 +86,19 @@ async def generate_image(
     image_2: UploadFile | None = None,
     image_3: UploadFile | None = None,
 ):
-    # Convert images to list
-    images = []
+    """
+    Rota de geração de imagem com Nano-Banana.
+    """
+
+    imgs = []
     for img in [image_1, image_2, image_3]:
         if img:
-            images.append(img.file)
+            imgs.append(img.file)
 
     model_input = {
         "prompt": prompt,
-        "image_input": images,
-        "quality": quality     # exemplo de parâmetro extra
+        "image_input": imgs,   # lista de imagens
+        "quality": quality
     }
 
     prediction = replicate.predictions.create(
@@ -119,7 +113,7 @@ async def generate_image(
 
 
 # =====================================================
-#                       POLLING
+#                     STATUS / POLLING
 # =====================================================
 
 @app.get("/status/{prediction_id}")
@@ -129,45 +123,58 @@ async def prediction_status(prediction_id: str):
     output_url = None
     output = prediction.output
 
-    # output pode vir em vários formatos — tratamos todos
-    if isinstance(output, str):
-         if output.endswith(".mp4") or output.endswith(".jpg") or output.endswith(".png"):
-            output_url = output
+    # ------------------------------------
+    #         CORREÇÃO DO PARSER
+    # ------------------------------------
+    def extract_url(item):
+        if not item:
+            return None
 
-    elif isinstance(output, list):
+        if isinstance(item, str):
+            if item.endswith((".mp4", ".jpg", ".png", ".jpeg", ".webp")):
+                return item
+
+        if isinstance(item, dict):
+            for key in ["video", "output", "url", "image", "output_video"]:
+                u = item.get(key)
+                if isinstance(u, str) and u.endswith((".mp4", ".jpg", ".png", ".jpeg", ".webp")):
+                    return u
+
+        return None
+
+    # LISTA
+    if isinstance(output, list):
         for item in output:
-            if isinstance(item, str) and item.endswith(".mp4") or item.endswith(".jpg") or item.endswith(".png"):
-                output_url = item
+            url = extract_url(item)
+            if url:
+                output_url = url
                 break
-            if isinstance(item, dict):
-                url = item.get("video") or item.get("output") or item.get("url")
-                if isinstance(url, str) and url.endswith(".mp4"):
-                    output_url = url
-                    break
 
+    # DICT
     elif isinstance(output, dict):
-        url = (
-            output.get("video")
-            or output.get("output")
-            or output.get("url")
-            or output.get("output_video")
-        )
-        if isinstance(url, str) and url.endswith(".mp4"):
+        url = extract_url(output)
+        if url:
+            output_url = url
+
+    # STRING
+    elif isinstance(output, str):
+        url = extract_url(output)
+        if url:
             output_url = url
 
     print("DEBUG OUTPUT:", output)
-    print("VIDEO URL:", output_url)
+    print("FINAL URL:", output_url)
 
     return {
         "id": prediction.id,
         "status": prediction.status,
+        "output_url": output_url,
         "logs": prediction.logs,
-        "output_url": output_url
     }
 
 
 # =====================================================
-#                     DOWNLOAD OPCIONAL
+#                   DOWNLOAD OPCIONAL
 # =====================================================
 
 @app.get("/download/{prediction_id}")
@@ -178,11 +185,10 @@ async def download_prediction(prediction_id: str):
         return {"error": "Output ainda não está pronto."}
 
     output_url = prediction.output[0]
-    video_bytes = requests.get(output_url).content
+    file_bytes = requests.get(output_url).content
 
     file_path = f"output_{prediction_id}.mp4"
     with open(file_path, "wb") as f:
-        f.write(video_bytes)
+        f.write(file_bytes)
 
     return {"file_path": file_path, "downloaded": True}
-
