@@ -35,23 +35,28 @@ app.add_middleware(
 async def generate_video(
     prompt: str = Form(...),
 
-    # PARÂMETROS vindos dos dropdowns personalizados
-    aspect_ratio: str = Form("landscape"),
+    # Parâmetros vindos dos dropdowns
+    aspect_ratio: str = Form("16:9"),
     duration: str = Form(None),
-    quality: str = Form(None),
+    quality: str = Form("1080p"),
 
+    # Arquivo opcional (define se é image+text)
     reference_file: UploadFile | None = None,
 ):
     """
-    Rota de geração de vídeo com Sora-2.
+    Geração de vídeo Sora-2.
+    Suporta:
+    - Texto puro
+    - Imagem + texto
     """
 
+    # Se veio arquivo → modo imagem + texto
     input_reference = reference_file.file if reference_file else None
 
     model_input = {
         "prompt": prompt,
         "aspect_ratio": aspect_ratio,
-        "resolution": "1080p",   # qualidade padrão
+        "resolution": "1080p",
     }
 
     if duration:
@@ -60,6 +65,7 @@ async def generate_video(
     if quality:
         model_input["quality"] = quality
 
+    # Aqui aplicamos o input_reference apenas se tiver imagem
     if input_reference:
         model_input["input_reference"] = input_reference
 
@@ -86,18 +92,11 @@ async def generate_image(
     image_2: UploadFile | None = None,
     image_3: UploadFile | None = None,
 ):
-    """
-    Rota de geração de imagem com Nano-Banana.
-    """
-
-    imgs = []
-    for img in [image_1, image_2, image_3]:
-        if img:
-            imgs.append(img.file)
+    imgs = [img.file for img in [image_1, image_2, image_3] if img]
 
     model_input = {
         "prompt": prompt,
-        "image_input": imgs,   # lista de imagens
+        "image_input": imgs,
         "quality": quality
     }
 
@@ -123,10 +122,8 @@ async def prediction_status(prediction_id: str):
     output_url = None
     output = prediction.output
 
-    # ------------------------------------
-    #         CORREÇÃO DO PARSER
-    # ------------------------------------
     def extract_url(item):
+        """Extrai URL válida de vídeo ou imagem."""
         if not item:
             return None
 
@@ -139,7 +136,6 @@ async def prediction_status(prediction_id: str):
                 u = item.get(key)
                 if isinstance(u, str) and u.endswith((".mp4", ".jpg", ".png", ".jpeg", ".webp")):
                     return u
-
         return None
 
     # LISTA
@@ -150,17 +146,13 @@ async def prediction_status(prediction_id: str):
                 output_url = url
                 break
 
-    # DICT
+    # DICIONÁRIO
     elif isinstance(output, dict):
-        url = extract_url(output)
-        if url:
-            output_url = url
+        output_url = extract_url(output)
 
     # STRING
     elif isinstance(output, str):
-        url = extract_url(output)
-        if url:
-            output_url = url
+        output_url = extract_url(output)
 
     print("DEBUG OUTPUT:", output)
     print("FINAL URL:", output_url)
