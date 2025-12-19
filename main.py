@@ -83,6 +83,32 @@ from typing import List
 import tempfile
 
 # =====================================================
+#               SORA 2 PRO - VIDEO
+# =====================================================
+
+@app.post("/generate-sora-pro")
+async def generate_sora_pro(
+    prompt: str = Form(...)
+):
+    """
+    Geração de vídeo com Sora-2 Pro
+    - Texto puro
+    - Input simples (apenas prompt)
+    """
+
+    prediction = replicate.predictions.create(
+        model="openai/sora-2-pro",
+        input={
+            "prompt": prompt
+        }
+    )
+
+    return {
+        "prediction_id": prediction.id,
+        "status": prediction.status
+    }
+
+# =====================================================
 #                GOOGLE VEO 3.1 - VIDEO
 # =====================================================
 
