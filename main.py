@@ -79,6 +79,54 @@ async def generate_video(
         "status": prediction.status
     }
 
+from typing import List
+import tempfile
+
+# =====================================================
+#                GOOGLE VEO 3.1 - VIDEO
+# =====================================================
+
+@app.post("/generate-veo")
+async def generate_veo_video(
+    prompt: str = Form(...),
+
+    # imagens de referência (0 a N)
+    reference_images: List[UploadFile] = Form([]),
+):
+    """
+    Geração de vídeo com Google Veo 3.1
+    - Texto puro
+    - Texto + múltiplas imagens
+    """
+
+    image_files = []
+
+    # salva imagens temporárias
+    for img in reference_images:
+        suffix = os.path.splitext(img.filename)[1] or ".png"
+        tmp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
+        tmp.write(await img.read())
+        tmp.close()
+        image_files.append(tmp.name)
+
+    model_input = {
+        "prompt": prompt,
+    }
+
+    if image_files:
+        model_input["reference_images"] = image_files
+
+    prediction = replicate.predictions.create(
+        model="google/veo-3.1",
+        input=model_input
+    )
+
+    return {
+        "prediction_id": prediction.id,
+        "status": prediction.status
+    }
+
+
 
 # =====================================================
 #                NANO-BANANA - IMAGEM
