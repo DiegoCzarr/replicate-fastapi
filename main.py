@@ -184,6 +184,28 @@ async def generate_image(
         "status": prediction.status
     }
 
+# =====================================================
+#              FLUX 1.1 PRO - IMAGE
+# =====================================================
+
+@app.post("/generate-flux")
+async def generate_flux(
+    prompt: str = Form(...),
+    prompt_upsampling: bool = Form(False)
+):
+    prediction = replicate.predictions.create(
+        model="black-forest-labs/flux-1.1-pro",
+        input={
+            "prompt": prompt,
+            "prompt_upsampling": prompt_upsampling
+        }
+    )
+
+    return {
+        "prediction_id": prediction.id,
+        "status": prediction.status
+    }
+
 
 # =====================================================
 #                     STATUS / POLLING
