@@ -185,6 +185,79 @@ async def generate_image(
     }
 
 # =====================================================
+#           SEEDREAM 4.5 - IMAGE
+# =====================================================
+
+@app.post("/generate-seedream-4.5")
+async def generate_seedream(
+    prompt: str = Form(...),
+    size: str = Form("2K"),
+    aspect_ratio: str = Form("1:1")
+):
+    prediction = replicate.predictions.create(
+        model="bytedance/seedream-4.5",
+        input={
+            "prompt": prompt,
+            "size": size,
+            "aspect_ratio": aspect_ratio
+        }
+    )
+
+    return {
+        "prediction_id": prediction.id,
+        "status": prediction.status
+    }
+# =====================================================
+#        FLUX KONTEXT MAX - IMAGE + TEXT
+# =====================================================
+
+@app.post("/generate-flux-kontext")
+async def generate_flux_kontext(
+    prompt: str = Form(...),
+    output_format: str = Form("jpg"),
+    input_image: UploadFile = Form(...)
+):
+    """
+    Geração de imagem usando Flux Kontext Max
+    - Texto + imagem obrigatória
+    """
+
+    prediction = replicate.predictions.create(
+        model="black-forest-labs/flux-kontext-max",
+        input={
+            "prompt": prompt,
+            "input_image": input_image.file,
+            "output_format": output_format
+        }
+    )
+
+    return {
+        "prediction_id": prediction.id,
+        "status": prediction.status
+    }
+
+# =====================================================
+#               FLUX 2 PRO - IMAGE
+# =====================================================
+
+@app.post("/generate-flux-2-pro")
+async def generate_flux_2_pro(
+    prompt: str = Form(...)
+):
+    prediction = replicate.predictions.create(
+        model="black-forest-labs/flux-2-pro",
+        input={
+            "prompt": prompt
+        }
+    )
+
+    return {
+        "prediction_id": prediction.id,
+        "status": prediction.status
+    }
+
+
+# =====================================================
 #              FLUX 1.1 PRO - IMAGE
 # =====================================================
 
