@@ -152,6 +152,39 @@ async def generate_veo_video(
         "status": prediction.status
     }
 
+@app.post("/generate-veo-fast")
+async def generate_veo_fast(
+    prompt: str = Form(...),
+    resolution: str = Form("720p"),
+    image: UploadFile = Form(...)
+):
+    """
+    Google Veo 3 Fast
+    - Image REQUIRED
+    - Prompt REQUIRED
+    """
+
+    # Save image temporarily
+    suffix = os.path.splitext(image.filename)[1] or ".png"
+    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
+    tmp.write(await image.read())
+    tmp.close()
+
+    model_input = {
+        "image": tmp.name,
+        "prompt": prompt,
+        "resolution": resolution
+    }
+
+    prediction = replicate.predictions.create(
+        model="google/veo-3-fast",
+        input=model_input
+    )
+
+    return {
+        "prediction_id": prediction.id,
+        "status": prediction.status
+    }
 
 
 # =====================================================
