@@ -108,6 +108,29 @@ async def generate_sora_pro(
         "status": prediction.status
     }
 
+@app.post("/generate-kling-2.5-pro")
+async def generate_kling_video(
+    prompt: str = Form(...)
+):
+    """
+    Kling v2.5 Turbo Pro
+    - Text → Video
+    """
+
+    model_input = {
+        "prompt": prompt
+    }
+
+    prediction = replicate.predictions.create(
+        model="kwaivgi/kling-v2.5-turbo-pro",
+        input=model_input
+    )
+
+    return {
+        "prediction_id": prediction.id,
+        "status": prediction.status
+    }
+
 # =====================================================
 #                GOOGLE VEO 3.1 - VIDEO
 # =====================================================
