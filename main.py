@@ -344,40 +344,42 @@ async def generate_flux(
 async def prediction_status(prediction_id: str):
     prediction = replicate.predictions.get(prediction_id)
 
-    def extract_url(output):
-        if not output:
+    output_url = None
+    output = prediction.output
+
+    def extract_url(item):
+        """Extrai URL válida de vídeo ou imagem."""
+        if not item:
             return None
 
-        # Caso 1: objeto direto com .url (Flux, Kling, Veo Fast)
-        if hasattr(output, "url"):
-            return output.url
+        if isinstance(item, str):
+            if item.endswith((".mp4", ".jpg", ".png", ".jpeg", ".webp")):
+                return item
 
-        # Caso 2: lista
-        if isinstance(output, list):
-            for item in output:
-                if hasattr(item, "url"):
-                    return item.url
-                if isinstance(item, dict) and "url" in item:
-                    return item["url"]
-
-        # Caso 3: dict com videos (Sora 2 / Sora 2 Pro)
-        if isinstance(output, dict):
-            if "videos" in output and isinstance(output["videos"], list):
-                video = output["videos"][0]
-                if isinstance(video, dict):
-                    return video.get("url")
-
-            # fallback genérico
-            if "url" in output:
-                return output["url"]
-
+        if isinstance(item, dict):
+            for key in ["video", "output", "url", "image", "output_video"]:
+                u = item.get(key)
+                if isinstance(u, str) and u.endswith((".mp4", ".jpg", ".png", ".jpeg", ".webp")):
+                    return u
         return None
 
-    output_url = None
-    if prediction.status == "succeeded":
-        output_url = extract_url(prediction.output)
+    # LISTA
+    if isinstance(output, list):
+        for item in output:
+            url = extract_url(item)
+            if url:
+                output_url = url
+                break
 
-    print("DEBUG OUTPUT:", prediction.output)
+    # DICIONÁRIO
+    elif isinstance(output, dict):
+        output_url = extract_url(output)
+
+    # STRING
+    elif isinstance(output, str):
+        output_url = extract_url(output)
+
+    print("DEBUG OUTPUT:", output)
     print("FINAL URL:", output_url)
 
     return {
@@ -386,6 +388,7 @@ async def prediction_status(prediction_id: str):
         "output_url": output_url,
         "logs": prediction.logs,
     }
+
 
 # =====================================================
 #                   DOWNLOAD OPCIONAL
