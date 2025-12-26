@@ -337,18 +337,22 @@ async def generate_seedream(
 async def generate_flux_kontext(
     prompt: str = Form(...),
     output_format: str = Form("jpg"),
-    input_image: UploadFile = Form(...)
+    input_image: UploadFile = File(...)
 ):
     """
-    Geração de imagem usando Flux Kontext Max
-    - Texto + imagem obrigatória
+    Flux Kontext Max
+    Texto + imagem obrigatória
     """
 
+    # 1️⃣ Ler os bytes da imagem
+    image_bytes = await input_image.read()
+
+    # 2️⃣ Criar prediction corretamente
     prediction = replicate.predictions.create(
         model="black-forest-labs/flux-kontext-max",
         input={
             "prompt": prompt,
-            "input_image": input_image.file,
+            "image": image_bytes,   # ⚠️ nome correto
             "output_format": output_format
         }
     )
