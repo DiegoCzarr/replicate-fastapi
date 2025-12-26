@@ -280,6 +280,32 @@ async def generate_image(
         "status": prediction.status
     }
 
+@app.post("/generate-nano-pro")
+async def generate_nano_banana_pro(
+    prompt: str = Form(...),
+    aspect_ratio: str = Form("1:1"),
+    output_format: str = Form("png")
+):
+    """
+    Nano Banana Pro
+    """
+
+    model_input = {
+        "prompt": prompt,
+        "aspect_ratio": aspect_ratio,
+        "output_format": output_format
+    }
+
+    prediction = replicate.predictions.create(
+        model="google/nano-banana-pro",
+        input=model_input
+    )
+
+    return {
+        "prediction_id": prediction.id,
+        "status": prediction.status
+    }
+
 # =====================================================
 #           SEEDREAM 4.5 - IMAGE
 # =====================================================
