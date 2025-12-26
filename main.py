@@ -108,6 +108,10 @@ async def generate_sora_pro(
         "status": prediction.status
     }
 
+# =====================================================
+#               KLING 2.5 PRO - VIDEO
+# =====================================================
+
 @app.post("/generate-kling-2.5-pro")
 async def generate_kling_video(
     prompt: str = Form(...)
@@ -123,6 +127,42 @@ async def generate_kling_video(
 
     prediction = replicate.predictions.create(
         model="kwaivgi/kling-v2.5-turbo-pro",
+        input=model_input
+    )
+
+    return {
+        "prediction_id": prediction.id,
+        "status": prediction.status
+    }
+
+# =====================================================
+#               GEN 4 TURBO - VIDEO
+# =====================================================
+
+@app.post("/generate-gen4")
+async def generate_gen4_video(
+    prompt: str = Form(...),
+    image: UploadFile = Form(...)
+):
+    """
+    Runway Gen-4 Turbo
+    - Image REQUIRED
+    - Prompt REQUIRED
+    """
+
+    # Save image temporarily
+    suffix = os.path.splitext(image.filename)[1] or ".png"
+    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
+    tmp.write(await image.read())
+    tmp.close()
+
+    model_input = {
+        "image": tmp.name,
+        "prompt": prompt
+    }
+
+    prediction = replicate.predictions.create(
+        model="runwayml/gen4-turbo",
         input=model_input
     )
 
