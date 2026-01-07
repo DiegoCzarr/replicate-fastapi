@@ -12,14 +12,6 @@ import cloudinary.api
 
 load_dotenv()
 
-cloudinary.config(
-    cloud_name=os.getenv("dazmenr77"),
-    api_key=os.getenv("767758462789689"),
-    api_secret=os.getenv("wVFx4z3F52Vgh9a2POVRl0XcGA8"),
-    secure=True
-)
-
-
 # Guarda relação prediction_id -> cloudinary_public_id
 FLUX_TEMP_IMAGES = {}
 
