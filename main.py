@@ -14,6 +14,8 @@ load_dotenv()
 
 # Guarda relação prediction_id -> cloudinary_public_id
 FLUX_TEMP_IMAGES = {}
+SORA2_TEMP_IMAGES = {}
+
 
 # Auth
 os.environ["REPLICATE_API_TOKEN"] = os.getenv("REPLICATE_API_TOKEN")
@@ -42,44 +44,54 @@ app.add_middleware(
 async def generate_video(
     prompt: str = Form(...),
 
-    # Parâmetros vindos dos dropdowns
+    # Dropdowns
     aspect_ratio: str = Form("16:9"),
     duration: str = Form(None),
     quality: str = Form("1080p"),
 
-    # Arquivo opcional (define se é image+text)
-    reference_file: UploadFile | None = None,
+    # Imagem opcional
+    reference_file: UploadFile | None = File(None),
 ):
     """
-    Geração de vídeo Sora-2.
-    Suporta:
+    Sora-2
     - Texto puro
-    - Imagem + texto
+    - Texto + imagem (via Cloudinary URL)
     """
-
-    # Se veio arquivo → modo imagem + texto
-    input_reference = reference_file.file if reference_file else None
 
     model_input = {
         "prompt": prompt,
         "aspect_ratio": aspect_ratio,
-        "resolution": "1080p",
+        "resolution": quality,
     }
 
     if duration:
         model_input["duration"] = duration
 
-    if quality:
-        model_input["quality"] = quality
+    cloudinary_public_id = None
 
-    # Aqui aplicamos o input_reference apenas se tiver imagem
-    if input_reference:
-        model_input["input_reference"] = input_reference
+    # 1️⃣ Upload temporário para Cloudinary (SE houver imagem)
+    if reference_file:
+        upload_result = cloudinary.uploader.upload(
+            reference_file.file,
+            folder="sora2-temp",
+            resource_type="image"
+        )
 
+        image_url = upload_result["secure_url"]
+        cloudinary_public_id = upload_result["public_id"]
+
+        # 2️⃣ Replicate recebe SOMENTE a URL
+        model_input["input_image"] = image_url
+
+    # 3️⃣ Criar prediction no Replicate
     prediction = replicate.predictions.create(
         model="openai/sora-2",
         input=model_input
     )
+
+    # 4️⃣ Registrar imagem temporária para cleanup
+    if cloudinary_public_id:
+        SORA2_TEMP_IMAGES[prediction.id] = cloudinary_public_id
 
     return {
         "prediction_id": prediction.id,
