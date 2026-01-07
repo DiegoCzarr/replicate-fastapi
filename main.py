@@ -5,8 +5,23 @@ from fastapi import FastAPI, UploadFile, Form, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
+
 
 load_dotenv()
+
+cloudinary.config(
+    cloud_name=os.getenv("dazmenr77"),
+    api_key=os.getenv("767758462789689"),
+    api_secret=os.getenv("wVFx4z3F52Vgh9a2POVRl0XcGA8"),
+    secure=True
+)
+
+
+# Guarda relação prediction_id -> cloudinary_public_id
+FLUX_TEMP_IMAGES = {}
 
 # Auth
 os.environ["REPLICATE_API_TOKEN"] = os.getenv("REPLICATE_API_TOKEN")
@@ -344,23 +359,34 @@ async def generate_flux_kontext(
     Texto + imagem obrigatória
     """
 
-    # 1️⃣ Ler os bytes da imagem
-    image_bytes = await input_image.read()
+    # 1️⃣ Upload temporário para Cloudinary
+    upload_result = cloudinary.uploader.upload(
+        input_image.file,
+        folder="flux-kontext-temp",
+        resource_type="image"
+    )
 
-    # 2️⃣ Criar prediction corretamente
+    image_url = upload_result["secure_url"]
+    public_id = upload_result["public_id"]
+
+    # 2️⃣ Criar prediction no Replicate (SOMENTE URL)
     prediction = replicate.predictions.create(
         model="black-forest-labs/flux-kontext-max",
         input={
             "prompt": prompt,
-            "image": image_bytes,   # ⚠️ nome correto
+            "input_image": image_url,
             "output_format": output_format
         }
     )
+
+    # 3️⃣ Registrar imagem temporária para cleanup depois
+    FLUX_TEMP_IMAGES[prediction.id] = public_id
 
     return {
         "prediction_id": prediction.id,
         "status": prediction.status
     }
+
 
 # =====================================================
 #               FLUX 2 PRO - IMAGE
@@ -416,6 +442,7 @@ async def prediction_status(prediction_id: str):
 
     output_url = None
     output = prediction.output
+    
 
     def extract_url(item):
         """Extrai URL válida de vídeo ou imagem."""
@@ -451,6 +478,18 @@ async def prediction_status(prediction_id: str):
 
     print("DEBUG OUTPUT:", output)
     print("FINAL URL:", output_url)
+
+        # 🔥 Cleanup Cloudinary quando finalizar
+    if prediction.status in ["succeeded", "failed"]:
+        public_id = FLUX_TEMP_IMAGES.pop(prediction_id, None)
+
+        if public_id:
+            try:
+                cloudinary.uploader.destroy(public_id)
+                print(f"[CLOUDINARY] Deleted temp image: {public_id}")
+            except Exception as e:
+                print(f"[CLOUDINARY ERROR] {e}")
+
 
     return {
         "id": prediction.id,
