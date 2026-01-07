@@ -81,7 +81,7 @@ async def generate_video(
         cloudinary_public_id = upload_result["public_id"]
 
         # 2️⃣ Replicate recebe SOMENTE a URL
-        model_input["input_image"] = image_url
+        model_input["image"] = image_url
 
     # 3️⃣ Criar prediction no Replicate
     prediction = replicate.predictions.create(
