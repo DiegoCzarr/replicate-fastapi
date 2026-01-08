@@ -46,7 +46,7 @@ async def generate_video(
 
     # Dropdowns
     aspect_ratio: str = Form("16:9"),
-    duration: str = Form(None),
+    seconds: str = Form(None),
     quality: str = Form("1080p"),
 
     # Imagem opcional
@@ -65,8 +65,8 @@ async def generate_video(
         "seconds": 8
     }
 
-    if duration:
-        model_input["duration"] = duration
+    if seconds:
+        model_input["seconds"] = seconds
 
     cloudinary_public_id = None
 
