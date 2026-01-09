@@ -62,7 +62,7 @@ async def generate_video(
         "prompt": prompt,
         "aspect_ratio": aspect_ratio,
         "resolution": quality,
-        "seconds": 8
+        
     }
 
     if seconds:
