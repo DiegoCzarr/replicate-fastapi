@@ -72,6 +72,7 @@ async def generate_video(
 
     # 1️⃣ Upload temporário para Cloudinary (SE houver imagem)
     if reference_file:
+        print("✅ Imagem recebida:", reference_file.filename)
         upload_result = cloudinary.uploader.upload(
             reference_file.file,
             folder="sora2-temp",
