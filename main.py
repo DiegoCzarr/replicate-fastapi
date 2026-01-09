@@ -45,8 +45,8 @@ async def generate_video(
     prompt: str = Form(...),
 
     # Dropdowns
-    aspect_ratio: str = Form("16:9"),
-    seconds: str = Form(None),
+    aspect_ratio: str = Form("landscape"),
+    seconds: str | None = Form(None),
     quality: str = Form("1080p"),
 
     # Imagem opcional
@@ -66,7 +66,7 @@ async def generate_video(
     }
 
     if seconds:
-        model_input["seconds"] = seconds
+        model_input["seconds"] = int(seconds)
 
     cloudinary_public_id = None
 
