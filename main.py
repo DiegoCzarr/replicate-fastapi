@@ -80,10 +80,15 @@ async def generate_video(
         )
 
         image_url = upload_result["secure_url"]
+        print("✅ CLOUDINARY URL:", image_url)
         cloudinary_public_id = upload_result["public_id"]
 
         # 2️⃣ Replicate recebe SOMENTE a URL
         model_input["image"] = image_url
+    else:
+        print("⚠️ NO IMAGE RECEIVED")
+
+    print("🚀 FINAL MODEL INPUT:", model_input)
 
     # 3️⃣ Criar prediction no Replicate
     prediction = replicate.predictions.create(
