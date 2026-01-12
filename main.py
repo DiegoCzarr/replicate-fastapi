@@ -15,6 +15,7 @@ load_dotenv()
 # Guarda relação prediction_id -> cloudinary_public_id
 FLUX_TEMP_IMAGES = {}
 SORA2_TEMP_IMAGES = {}
+SORA2_PRO_TEMP_IMAGES = {}
 
 
 # Auth
@@ -114,7 +115,13 @@ import tempfile
 
 @app.post("/generate-sora-pro")
 async def generate_sora_pro(
-    prompt: str = Form(...)
+    prompt: str = Form(...),
+
+    aspect_ratio: str = Form ("landscape")
+    seconds: str | None = Form(None),
+    resolution: str = Form ("standard"),
+
+    reference_file: UploadFile | None = File(None)
 ):
     """
     Geração de vídeo com Sora-2 Pro
@@ -125,14 +132,52 @@ async def generate_sora_pro(
     prediction = replicate.predictions.create(
         model="openai/sora-2-pro",
         input={
-            "prompt": prompt
+            "prompt": prompt,
+            "aspect_ratio": aspect_ratio,
+            "resolution": resolution,
         }
     )
+
+ if seconds:
+        model_input["seconds"] = int(seconds)
+
+    cloudinary_public_id = None
+
+    # 1️⃣ Upload temporário para Cloudinary (SE houver imagem)
+    if reference_file:
+        print("✅ Imagem recebida:", reference_file.filename)
+        upload_result = cloudinary.uploader.upload(
+            reference_file.file,
+            folder="sora2-pro-temp",
+            resource_type="image"
+        )
+
+        image_url = upload_result["secure_url"]
+        print("✅ CLOUDINARY URL:", image_url)
+        cloudinary_public_id = upload_result["public_id"]
+
+        # 2️⃣ Replicate recebe SOMENTE a URL
+        model_input["input_reference"] = image_url
+    else:
+        print("⚠️ NO IMAGE RECEIVED")
+
+    print("🚀 FINAL MODEL INPUT:", model_input)
+
+    # 3️⃣ Criar prediction no Replicate
+    prediction = replicate.predictions.create(
+        model="openai/sora-2-pro",
+        input=model_input
+    )
+
+    # 4️⃣ Registrar imagem temporária para cleanup
+    if cloudinary_public_id:
+        SORA2_TEMP_IMAGES[prediction.id] = cloudinary_public_id
 
     return {
         "prediction_id": prediction.id,
         "status": prediction.status
     }
+
 
 # =====================================================
 #               KLING 2.5 PRO - VIDEO
