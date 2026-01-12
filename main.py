@@ -84,7 +84,7 @@ async def generate_video(
         cloudinary_public_id = upload_result["public_id"]
 
         # 2️⃣ Replicate recebe SOMENTE a URL
-        model_input["image"] = image_url
+        model_input["input_reference"] = image_url
     else:
         print("⚠️ NO IMAGE RECEIVED")
 
