@@ -300,8 +300,12 @@ async def generate_veo_video(
 @app.post("/generate-veo-fast")
 async def generate_veo_fast(
     prompt: str = Form(...),
+    image: UploadFile = File(...),
+
+    duration: int = Form(8),
     resolution: str = Form("720p"),
-    reference_file: UploadFile = File(...)
+    aspect_ratio: str = Form("16:9"),
+    generate_audio: bool = Form(True),
 ):
     """
     Google Veo 3 Fast
@@ -309,39 +313,36 @@ async def generate_veo_fast(
     - Prompt REQUIRED
     """
 
-    cloudinary_public_id = None
-
-    # 1️⃣ Upload obrigatório para Cloudinary
-    print("✅ Imagem recebida:", reference_file.filename)
+    print("✅ Imagem recebida:", image.filename)
 
     upload_result = cloudinary.uploader.upload(
-        reference_file.file,
+        image.file,
         folder="veo3-fast-temp",
         resource_type="image"
     )
 
     image_url = upload_result["secure_url"]
-    cloudinary_public_id = upload_result["public_id"]
+    public_id = upload_result["public_id"]
 
     print("✅ CLOUDINARY URL:", image_url)
 
-    # 2️⃣ Input do modelo (URL pública)
     model_input = {
         "image": image_url,
         "prompt": prompt,
-        "resolution": resolution
+        "duration": duration,
+        "resolution": resolution,
+        "aspect_ratio": aspect_ratio,
+        "generate_audio": generate_audio
     }
 
     print("🚀 FINAL MODEL INPUT:", model_input)
 
-    # 3️⃣ Criar prediction no Replicate
     prediction = replicate.predictions.create(
         model="google/veo-3-fast",
         input=model_input
     )
 
-    # 4️⃣ Registrar imagem temporária para cleanup posterior
-    VEO3_TEMP_IMAGES[prediction.id] = cloudinary_public_id
+    VEO3_TEMP_IMAGES[prediction.id] = public_id
 
     return {
         "prediction_id": prediction.id,
@@ -566,7 +567,13 @@ async def prediction_status(prediction_id: str):
 
         # 🔥 Cleanup Cloudinary quando finalizar
     if prediction.status in ["succeeded", "failed"]:
-        public_id = FLUX_TEMP_IMAGES.pop(prediction_id, None)
+        public_id = (
+            FLUX_TEMP_IMAGES.pop(prediction_id, None)
+            or SORA2_TEMP_IMAGES.pop(prediction_id, None)
+            or SORA2_PRO_TEMP_IMAGES.pop(prediction_id, None)
+            or VEO3_TEMP_IMAGES.pop(prediction_id, None)
+        )
+
 
         if public_id:
             try:
