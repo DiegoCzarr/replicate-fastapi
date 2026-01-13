@@ -16,6 +16,8 @@ load_dotenv()
 FLUX_TEMP_IMAGES = {}
 SORA2_TEMP_IMAGES = {}
 SORA2_PRO_TEMP_IMAGES = {}
+VEO3_TEMP_IMAGES = {}
+
 
 
 # Auth
@@ -291,11 +293,15 @@ async def generate_veo_video(
         "status": prediction.status
     }
 
+# =====================================================
+#               GOOGLE VEO 3 FAST
+# =====================================================
+
 @app.post("/generate-veo-fast")
 async def generate_veo_fast(
     prompt: str = Form(...),
     resolution: str = Form("720p"),
-    image: UploadFile = Form(...)
+    reference_file: UploadFile = File(...)
 ):
     """
     Google Veo 3 Fast
@@ -303,27 +309,45 @@ async def generate_veo_fast(
     - Prompt REQUIRED
     """
 
-    # Save image temporarily
-    suffix = os.path.splitext(image.filename)[1] or ".png"
-    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
-    tmp.write(await image.read())
-    tmp.close()
+    cloudinary_public_id = None
 
+    # 1️⃣ Upload obrigatório para Cloudinary
+    print("✅ Imagem recebida:", reference_file.filename)
+
+    upload_result = cloudinary.uploader.upload(
+        reference_file.file,
+        folder="veo3-fast-temp",
+        resource_type="image"
+    )
+
+    image_url = upload_result["secure_url"]
+    cloudinary_public_id = upload_result["public_id"]
+
+    print("✅ CLOUDINARY URL:", image_url)
+
+    # 2️⃣ Input do modelo (URL pública)
     model_input = {
-        "image": tmp.name,
+        "image": image_url,
         "prompt": prompt,
         "resolution": resolution
     }
 
+    print("🚀 FINAL MODEL INPUT:", model_input)
+
+    # 3️⃣ Criar prediction no Replicate
     prediction = replicate.predictions.create(
         model="google/veo-3-fast",
         input=model_input
     )
 
+    # 4️⃣ Registrar imagem temporária para cleanup posterior
+    VEO3_TEMP_IMAGES[prediction.id] = cloudinary_public_id
+
     return {
         "prediction_id": prediction.id,
         "status": prediction.status
     }
+
 
 
 # =====================================================
