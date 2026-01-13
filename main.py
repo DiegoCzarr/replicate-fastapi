@@ -270,7 +270,6 @@ async def generate_veo_video(
     # Parse generate_audio
     # -----------------------------
     generate_audio_bool = str(generate_audio).lower() in ["true", "1", "yes"]
-    image_files = []
 
     # -----------------------------
     # Upload reference images
@@ -278,39 +277,40 @@ async def generate_veo_video(
     reference_urls = []
 
     if reference_images:
-            for img in reference_images:
-                upload = cloudinary.uploader.upload(
-                    img.file,
-                    folder="veo3-fast-temp",
-                    resource_type="image"
-                )
-                reference_urls.append(upload["secure_url"])
-    
-        # -----------------------------
-        # Replicate input
-        # -----------------------------
-        model_input = {
-            "prompt": prompt,
-            "duration": int(duration),
-            "resolution": resolution,
-            "aspect_ratio": aspect_ratio,
-            "generate_audio": generate_audio_bool,
-        }
-    
-        if reference_urls:
-            model_input["reference_images"] = reference_urls
-    
-        print("🚀 VEO 3.1 INPUT:", model_input)
-    
-        prediction = replicate.predictions.create(
-            model="google/veo-3.1",
-            input=model_input
-        )
-    
-        return {
-            "prediction_id": prediction.id,
-            "status": prediction.status
-        }
+        for img in reference_images:
+            upload = cloudinary.uploader.upload(
+                img.file,
+                folder="veo3-temp",
+                resource_type="image"
+            )
+            reference_urls.append(upload["secure_url"])
+
+    # -----------------------------
+    # Replicate input
+    # -----------------------------
+    model_input = {
+        "prompt": prompt,
+        "duration": int(duration),
+        "resolution": resolution,
+        "aspect_ratio": aspect_ratio,
+        "generate_audio": generate_audio_bool,
+    }
+
+    if reference_urls:
+        model_input["reference_images"] = reference_urls
+
+    print("🚀 VEO 3.1 INPUT:", model_input)
+
+    prediction = replicate.predictions.create(
+        model="google/veo-3.1",
+        input=model_input
+    )
+
+    return {
+        "prediction_id": prediction.id,
+        "status": prediction.status
+    }
+
 
 # =====================================================
 #               GOOGLE VEO 3 FAST
