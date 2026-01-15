@@ -502,7 +502,7 @@ async def generate_flux_2_pro(
     prompt: str = Form(...),
     output_format: str = Form(...),
     input_images: UploadFile = File(...),
-    resolution: Form("1 MP")
+    
 ):
 
         # 1️⃣ Upload temporário para Cloudinary
