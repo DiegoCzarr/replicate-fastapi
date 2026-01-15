@@ -499,15 +499,30 @@ async def generate_flux_kontext(
 
 @app.post("/generate-flux-2-pro")
 async def generate_flux_2_pro(
-    prompt: str = Form(...)
+    prompt: str = Form(...),
+    output_format: str = Form(...),
+    input_images: UploadFile = File(...),
+    resolution: Form("1 MP")
 ):
+
+        # 1️⃣ Upload temporário para Cloudinary
+    upload_result = cloudinary.uploader.upload(
+        input_image.file,
+        folder="flux-kontext-temp",
+        resource_type="image"
+    )
+    image_url = upload_result["secure_url"]
+    public_id = upload_result["public_id"]
+    
     prediction = replicate.predictions.create(
         model="black-forest-labs/flux-2-pro",
         input={
-            "prompt": prompt
+            "prompt": prompt    
         }
     )
 
+    FLUX_TEMP_IMAGES[prediction.id] = public_id
+    
     return {
         "prediction_id": prediction.id,
         "status": prediction.status
