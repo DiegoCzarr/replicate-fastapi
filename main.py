@@ -18,6 +18,7 @@ SORA2_TEMP_IMAGES = {}
 SORA2_PRO_TEMP_IMAGES = {}
 VEO3_TEMP_IMAGES = {}
 SEEDREAM_TEMP_IMAGES = {}
+NANOBANANA_TEMP_IMAGES = {}
 
 # Auth
 os.environ["REPLICATE_API_TOKEN"] = os.getenv("REPLICATE_API_TOKEN")
@@ -378,17 +379,43 @@ async def generate_veo_fast(
 @app.post("/generate-image")
 async def generate_image(
     prompt: str = Form(...),
+    image: UploadFile = File(...),
     quality: str = Form("standard"),
-    image_1: UploadFile | None = None,
-    image_2: UploadFile | None = None,
-    image_3: UploadFile | None = None,
+    input_images: List[UploadFile] = File(None)
 ):
-    imgs = [img.file for img in [image_1, image_2, image_3] if img]
+    print("✅ Imagem recebida:", image.filename)
+
+    upload_result = cloudinary.uploader.upload(
+        image.file,
+        folder="veo3-fast-temp",
+        resource_type="image"
+    )
+
+    image_url = upload_result["secure_url"]
+    public_id = upload_result["public_id"]
+
+    print("📥 INPUT IMAGES:", input_images)
+    if input_images:
+        print("📥 QTD IMAGENS:", len(input_images))
+        print("📥 NOMES:", [img.filename for img in input_images])
+        for image in input_images[:12]:
+            upload = cloudinary.uploader.upload(
+                image.file,
+                folder="seedream-temp",
+                resource_type="image"
+            )
+            image_urls.append(upload["secure_url"])
+            public_ids.append(upload["public_id"])
+
+    len(image_urls) if image_urls else 0,
+
+    print("✅ CLOUDINARY URL:", image_url)
 
     model_input = {
         "prompt": prompt,
         "image_input": imgs,
-        "quality": quality
+        "quality": quality,
+        "image_input": image_urls,
     }
 
     prediction = replicate.predictions.create(
@@ -396,6 +423,7 @@ async def generate_image(
         input=model_input
     )
 
+    NANOBANANA_TEMP_IMAGES[prediction.id] = public_ids
     return {
         "prediction_id": prediction.id,
         "status": prediction.status
@@ -405,8 +433,28 @@ async def generate_image(
 async def generate_nano_banana_pro(
     prompt: str = Form(...),
     aspect_ratio: str = Form("1:1"),
-    output_format: str = Form("png")
+    output_format: str = Form("png"),
+    input_images: List[UploadFile] = File(None)
 ):
+    image_urls = []
+    public_ids = []
+
+        # 🔹 Upload opcional de imagens para Cloudinary
+    print("📥 INPUT IMAGES:", input_images)
+    if input_images:
+        print("📥 QTD IMAGENS:", len(input_images))
+        print("📥 NOMES:", [img.filename for img in input_images])
+        for image in input_images[:12]:
+            upload = cloudinary.uploader.upload(
+                image.file,
+                folder="seedream-temp",
+                resource_type="image"
+            )
+            image_urls.append(upload["secure_url"])
+            public_ids.append(upload["public_id"])
+
+    len(image_urls) if image_urls else 0,
+
     """
     Nano Banana Pro
     """
@@ -414,14 +462,16 @@ async def generate_nano_banana_pro(
     model_input = {
         "prompt": prompt,
         "aspect_ratio": aspect_ratio,
-        "output_format": output_format
+        "output_format": output_format,
+        "image_input": image_urls,  # ✅ CAMPO CORRETO
     }
 
     prediction = replicate.predictions.create(
         model="google/nano-banana-pro",
         input=model_input
     )
-
+    
+    NANOBANANA_TEMP_IMAGES[prediction.id] = public_ids
     return {
         "prediction_id": prediction.id,
         "status": prediction.status
@@ -660,6 +710,7 @@ async def prediction_status(prediction_id: str):
             or SORA2_PRO_TEMP_IMAGES.pop(prediction_id, None)
             or VEO3_TEMP_IMAGES.pop(prediction_id, None)
             or SEEDREAM_TEMP_IMAGES.pop(prediction_id, None)
+            or NANOBANANA_TEMP_IMAGE.pop(prediction_id, None)
         )
 
 
