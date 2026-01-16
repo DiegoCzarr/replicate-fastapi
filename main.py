@@ -500,29 +500,56 @@ async def generate_flux_kontext(
 @app.post("/generate-flux-2-pro")
 async def generate_flux_2_pro(
     prompt: str = Form(...),
-    output_format: str = Form(...),
-    input_images: UploadFile = File(...),
-    
-):
 
-        # 1️⃣ Upload temporário para Cloudinary
-    upload_result = cloudinary.uploader.upload(
-        input_image.file,
-        folder="flux-kontext-temp",
-        resource_type="image"
-    )
-    image_url = upload_result["secure_url"]
-    public_id = upload_result["public_id"]
-    
+    resolution: str = Form("1 MP"),
+    aspect_ratio: str = Form("1:1"),
+    output_format: str = Form("webp"),
+    output_quality: int = Form(80),
+    safety_tolerance: int = Form(2),
+
+    input_images: Optional[List[UploadFile]] = File(None)
+):
+    """
+    Flux 2 Pro
+    - Texto puro
+    - Texto + imagens de referência
+    """
+
+    reference_urls = []
+    public_ids = []
+
+    # 🔹 Upload opcional das imagens
+    if input_images:
+        for img in input_images:
+            upload = cloudinary.uploader.upload(
+                img.file,
+                folder="flux-2-pro-temp",
+                resource_type="image"
+            )
+            reference_urls.append(upload["secure_url"])
+            public_ids.append(upload["public_id"])
+
+    # 🔹 Input FINAL do modelo
+    model_input = {
+        "prompt": prompt,
+        "resolution": resolution,
+        "aspect_ratio": aspect_ratio,
+        "output_format": output_format,
+        "output_quality": output_quality,
+        "safety_tolerance": safety_tolerance,
+        "input_images": reference_urls
+    }
+
+    print("🚀 FLUX 2 PRO INPUT:", model_input)
+
     prediction = replicate.predictions.create(
         model="black-forest-labs/flux-2-pro",
-        input={
-            "prompt": prompt    
-        }
+        input=model_input
     )
 
-    FLUX_TEMP_IMAGES[prediction.id] = public_id
-    
+    # opcional: guardar IDs pra cleanup
+    FLUX_TEMP_IMAGES[prediction.id] = public_ids
+
     return {
         "prediction_id": prediction.id,
         "status": prediction.status
