@@ -17,6 +17,7 @@ FLUX_TEMP_IMAGES = {}
 SORA2_TEMP_IMAGES = {}
 SORA2_PRO_TEMP_IMAGES = {}
 VEO3_TEMP_IMAGES = {}
+SEEDREAM_TEMP_IMAGES = {}
 
 # Auth
 os.environ["REPLICATE_API_TOKEN"] = os.getenv("REPLICATE_API_TOKEN")
@@ -429,22 +430,38 @@ async def generate_nano_banana_pro(
 # =====================================================
 #           SEEDREAM 4.5 - IMAGE
 # =====================================================
-
 @app.post("/generate-seedream-4.5")
 async def generate_seedream(
     prompt: str = Form(...),
     size: str = Form("2K"),
-    aspect_ratio: str = Form("1:1")
+    aspect_ratio: str = Form("16:9"),
+    input_images: List[UploadFile] = File(None)
 ):
+    image_urls = []
+    public_ids = []
+
+    # 🔹 upload opcional de imagens
+    if input_images:
+        for image in input_images[:12]:
+            upload = cloudinary.uploader.upload(
+                image.file,
+                folder="seedream-temp",
+                resource_type="image"
+            )
+            image_urls.append(upload["secure_url"])
+            public_ids.append(upload_result["public_id"])
+
     prediction = replicate.predictions.create(
         model="bytedance/seedream-4.5",
         input={
             "prompt": prompt,
             "size": size,
-            "aspect_ratio": aspect_ratio
+            "aspect_ratio": aspect_ratio,
+            "input_images": image_urls
         }
     )
 
+    SEEDREAM_TEMP_IMAGES[prediction.id] = public_ids
     return {
         "prediction_id": prediction.id,
         "status": prediction.status
@@ -633,6 +650,7 @@ async def prediction_status(prediction_id: str):
             or SORA2_TEMP_IMAGES.pop(prediction_id, None)
             or SORA2_PRO_TEMP_IMAGES.pop(prediction_id, None)
             or VEO3_TEMP_IMAGES.pop(prediction_id, None)
+            or SEEDREAM_TEMP_IMAGES.pop(prediction_id, None)
         )
 
 
