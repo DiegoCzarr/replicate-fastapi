@@ -435,12 +435,13 @@ async def generate_seedream(
     prompt: str = Form(...),
     size: str = Form("2K"),
     aspect_ratio: str = Form("16:9"),
+    sequential_image_generation: str = Form("disabled"),
     input_images: List[UploadFile] = File(None)
 ):
     image_urls = []
     public_ids = []
 
-    # 🔹 upload opcional de imagens
+    # 🔹 Upload opcional de imagens para Cloudinary
     if input_images:
         for image in input_images[:12]:
             upload = cloudinary.uploader.upload(
@@ -449,7 +450,7 @@ async def generate_seedream(
                 resource_type="image"
             )
             image_urls.append(upload["secure_url"])
-            public_ids.append(upload_result["public_id"])
+            public_ids.append(upload["public_id"])
 
     prediction = replicate.predictions.create(
         model="bytedance/seedream-4.5",
@@ -457,11 +458,14 @@ async def generate_seedream(
             "prompt": prompt,
             "size": size,
             "aspect_ratio": aspect_ratio,
-            "input_images": image_urls
+            "image_input": image_urls,  # ✅ CAMPO CORRETO
+            "max_images": 1,
+            "sequential_image_generation": sequential_image_generation
         }
     )
 
     SEEDREAM_TEMP_IMAGES[prediction.id] = public_ids
+
     return {
         "prediction_id": prediction.id,
         "status": prediction.status
