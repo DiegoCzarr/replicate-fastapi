@@ -455,6 +455,8 @@ async def generate_seedream(
             image_urls.append(upload["secure_url"])
             public_ids.append(upload["public_id"])
 
+    len(image_urls) if image_urls else 0,
+    
     prediction = replicate.predictions.create(
         model="bytedance/seedream-4.5",
         input={
@@ -462,7 +464,7 @@ async def generate_seedream(
             "size": size,
             "aspect_ratio": aspect_ratio,
             "image_input": image_urls,  # ✅ CAMPO CORRETO
-            "max_images": 1,
+            "max_images": len(image_urls) if image_urls else 0,
             "sequential_image_generation": sequential_image_generation
         }
     )
