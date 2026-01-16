@@ -442,7 +442,10 @@ async def generate_seedream(
     public_ids = []
 
     # 🔹 Upload opcional de imagens para Cloudinary
+    print("📥 INPUT IMAGES:", input_images)
     if input_images:
+        print("📥 QTD IMAGENS:", len(input_images))
+        print("📥 NOMES:", [img.filename for img in input_images])
         for image in input_images[:12]:
             upload = cloudinary.uploader.upload(
                 image.file,
