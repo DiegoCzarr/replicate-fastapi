@@ -20,6 +20,7 @@ VEO3_TEMP_IMAGES = {}
 SEEDREAM_TEMP_IMAGES = {}
 NANOBANANA_TEMP_IMAGES = {}
 KLING_TEMP_IMAGES = {}
+GEN4_TEMP_IMAGES = {}
 
 # Auth
 os.environ["REPLICATE_API_TOKEN"] = os.getenv("REPLICATE_API_TOKEN")
@@ -250,25 +251,44 @@ async def generate_kling_video(
 @app.post("/generate-gen4")
 async def generate_gen4_video(
     prompt: str = Form(...),
-    image: UploadFile = Form(...)
+    duration: str = Form("5"),
+    aspect_ratio: str = Form("16:9"),
+    
+    reference_file: Optional[UploadFile] = File(None)
 ):
     """
     Runway Gen-4 Turbo
     - Image REQUIRED
     - Prompt REQUIRED
     """
-
-    # Save image temporarily
-    suffix = os.path.splitext(image.filename)[1] or ".png"
-    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
-    tmp.write(await image.read())
-    tmp.close()
-
     model_input = {
-        "image": tmp.name,
-        "prompt": prompt
+        "prompt": prompt,
+        "duration": duration,
+        "aspect_ratio": aspect_ratio
     }
 
+    cloudinary_public_id = None
+
+    # 🔹 Upload para Cloudinary se houver imagem
+    if reference_file:
+        print("✅ Imagem recebida:", reference_file.filename)
+
+        upload_result = cloudinary.uploader.upload(
+            reference_file.file,
+            folder="gen4-temp",
+            resource_type="image"
+        )
+
+        image_url = upload_result["secure_url"]
+        cloudinary_public_id = upload_result["public_id"]
+
+        print("✅ CLOUDINARY URL:", image_url)
+
+        model_input["input_reference"] = image_url
+    else:
+        print("⚠️ NO IMAGE RECEIVED")
+
+    print("🚀 FINAL MODEL INPUT:", model_input)
     prediction = replicate.predictions.create(
         model="runwayml/gen4-turbo",
         input=model_input
@@ -742,6 +762,7 @@ async def prediction_status(prediction_id: str):
             or SEEDREAM_TEMP_IMAGES.pop(prediction_id, None)
             or NANOBANANA_TEMP_IMAGES.pop(prediction_id, None)
             or KLING_TEMP_IMAGES.pop(prediction_id, None)
+            or GEN4_TEMP_IMAGES.pop(prediction_id, None)
         )
 
 
