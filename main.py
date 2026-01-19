@@ -19,6 +19,7 @@ SORA2_PRO_TEMP_IMAGES = {}
 VEO3_TEMP_IMAGES = {}
 SEEDREAM_TEMP_IMAGES = {}
 NANOBANANA_TEMP_IMAGES = {}
+KLING_TEMP_IMAGES = {}
 
 # Auth
 os.environ["REPLICATE_API_TOKEN"] = os.getenv("REPLICATE_API_TOKEN")
@@ -192,7 +193,11 @@ async def generate_sora_pro(
 
 @app.post("/generate-kling-2.5-pro")
 async def generate_kling_video(
-    prompt: str = Form(...)
+    prompt: str = Form(...),
+    aspect_ratio: str = Form("landscape"),
+    duration: str = Form("5"),
+
+    reference_file: Optional[UploadFile] = File(None)
 ):
     """
     Kling v2.5 Turbo Pro
@@ -200,8 +205,33 @@ async def generate_kling_video(
     """
 
     model_input = {
-        "prompt": prompt
+        "prompt": prompt,
+        "aspect_ratio": aspect_ratio,
+        "duration": duration
     }
+
+    cloudinary_public_id = None
+
+    # 🔹 Upload para Cloudinary se houver imagem
+    if reference_file:
+        print("✅ Imagem recebida:", reference_file.filename)
+
+        upload_result = cloudinary.uploader.upload(
+            reference_file.file,
+            folder="kling-temp",
+            resource_type="image"
+        )
+
+        image_url = upload_result["secure_url"]
+        cloudinary_public_id = upload_result["public_id"]
+
+        print("✅ CLOUDINARY URL:", image_url)
+
+        model_input["input_reference"] = image_url
+    else:
+        print("⚠️ NO IMAGE RECEIVED")
+
+    print("🚀 FINAL MODEL INPUT:", model_input)
 
     prediction = replicate.predictions.create(
         model="kwaivgi/kling-v2.5-turbo-pro",
@@ -711,6 +741,7 @@ async def prediction_status(prediction_id: str):
             or VEO3_TEMP_IMAGES.pop(prediction_id, None)
             or SEEDREAM_TEMP_IMAGES.pop(prediction_id, None)
             or NANOBANANA_TEMP_IMAGES.pop(prediction_id, None)
+            or KLING_TEMP_IMAGES.pop(prediction_id, None)
         )
 
 
