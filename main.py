@@ -710,7 +710,7 @@ async def prediction_status(prediction_id: str):
             or SORA2_PRO_TEMP_IMAGES.pop(prediction_id, None)
             or VEO3_TEMP_IMAGES.pop(prediction_id, None)
             or SEEDREAM_TEMP_IMAGES.pop(prediction_id, None)
-            or NANOBANANA_TEMP_IMAGE.pop(prediction_id, None)
+            or NANOBANANA_TEMP_IMAGES.pop(prediction_id, None)
         )
 
 
