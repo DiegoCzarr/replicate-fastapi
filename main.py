@@ -198,7 +198,8 @@ async def generate_kling_video(
     aspect_ratio: str = Form("landscape"),
     duration: str = Form("5"),
 
-    reference_file: Optional[UploadFile] = File(None)
+    first_frame: Optional[UploadFile] = File(None),
+    last_frame: Optional[UploadFile] = File(None),
 ):
     """
     Kling v2.5 Turbo Pro
@@ -214,21 +215,22 @@ async def generate_kling_video(
     cloudinary_public_id = None
 
     # 🔹 Upload para Cloudinary se houver imagem
-    if reference_file:
-        print("✅ Imagem recebida:", reference_file.filename)
-
-        upload_result = cloudinary.uploader.upload(
-            reference_file.file,
+    if first_frame:
+        upload = cloudinary.uploader.upload(
+            first_frame.file,
             folder="kling-temp",
             resource_type="image"
         )
+        model_input["first_frame"] = upload["secure_url"]
+    
+    if last_frame:
+        upload = cloudinary.uploader.upload(
+            last_frame.file,
+            folder="kling-temp",
+            resource_type="image"
+        )
+        model_input["last_frame"] = upload["secure_url"]
 
-        image_url = upload_result["secure_url"]
-        cloudinary_public_id = upload_result["public_id"]
-
-        print("✅ CLOUDINARY URL:", image_url)
-
-        model_input["input_reference"] = image_url
     else:
         print("⚠️ NO IMAGE RECEIVED")
 
