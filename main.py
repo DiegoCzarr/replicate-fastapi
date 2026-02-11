@@ -431,43 +431,33 @@ async def generate_veo_fast(
 @app.post("/generate-image")
 async def generate_image(
     prompt: str = Form(...),
-    image: UploadFile = File(...),
     quality: str = Form("standard"),
     input_images: List[UploadFile] = File(None)
 ):
-    print("✅ Imagem recebida:", image.filename)
+    image_urls = []
+    public_ids = []
 
-    upload_result = cloudinary.uploader.upload(
-        image.file,
-        folder="veo3-fast-temp",
-        resource_type="image"
-    )
-
-    image_url = upload_result["secure_url"]
-    public_id = upload_result["public_id"]
-
-    print("📥 INPUT IMAGES:", input_images)
+    # 🔹 Upload opcional de imagens
     if input_images:
         print("📥 QTD IMAGENS:", len(input_images))
         print("📥 NOMES:", [img.filename for img in input_images])
-        for image in input_images[:12]:
+
+        for image in input_images:
             upload = cloudinary.uploader.upload(
                 image.file,
-                folder="seedream-temp",
+                folder="nanobanana-temp",
                 resource_type="image"
             )
+
             image_urls.append(upload["secure_url"])
             public_ids.append(upload["public_id"])
 
-    len(image_urls) if image_urls else 0,
-
-    print("✅ CLOUDINARY URL:", image_url)
+    print("✅ URLs enviadas ao modelo:", image_urls)
 
     model_input = {
         "prompt": prompt,
-        "image_input": imgs,
         "quality": quality,
-        "image_input": image_urls,
+        "image_input": image_urls  # se houver imagens
     }
 
     prediction = replicate.predictions.create(
@@ -475,7 +465,9 @@ async def generate_image(
         input=model_input
     )
 
+    # 🔹 Salva imagens temporárias para limpeza futura
     NANOBANANA_TEMP_IMAGES[prediction.id] = public_ids
+
     return {
         "prediction_id": prediction.id,
         "status": prediction.status
