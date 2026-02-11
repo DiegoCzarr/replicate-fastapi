@@ -431,7 +431,7 @@ async def generate_veo_fast(
 @app.post("/generate-image")
 async def generate_image(
     prompt: str = Form(...),
-    aspect_ratio: str = Form("16:9")
+    aspect_ratio: str = Form("16:9"),
     input_images: List[UploadFile] = File(None)
 ):
     image_urls = []
