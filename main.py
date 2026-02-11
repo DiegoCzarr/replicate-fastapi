@@ -458,6 +458,7 @@ async def generate_image(
     model_input = {
         "prompt": prompt,
         "output_format": output_format,
+        "aspect_ratio": aspect_ratio,
         "image_input": image_urls  # se houver imagens
     }
 
