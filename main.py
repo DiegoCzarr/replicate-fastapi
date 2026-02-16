@@ -195,8 +195,8 @@ async def generate_sora_pro(
 @app.post("/generate-kling-2.5-pro")
 async def generate_kling_video(
     prompt: str = Form(...),
-    aspect_ratio: str = Form("landscape"),
-    duration: str = Form("5"),
+    aspect_ratio: str = Form("16:9"),
+    duration: int = Form(5),
 
     first_frame: Optional[UploadFile] = File(None),
     last_frame: Optional[UploadFile] = File(None),
