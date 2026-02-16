@@ -713,20 +713,28 @@ async def prediction_status(prediction_id: str):
     
 
     def extract_url(item):
-        """Extrai URL válida de vídeo ou imagem."""
         if not item:
             return None
-
-        if isinstance(item, str):
-            if item.endswith((".mp4", ".jpg", ".png", ".jpeg", ".webp")):
-                return item
-
+    
+        # string direta
+        if isinstance(item, str) and item.startswith("http"):
+            return item
+    
+        # dict
         if isinstance(item, dict):
             for key in ["video", "output", "url", "image", "output_video"]:
-                u = item.get(key)
-                if isinstance(u, str) and u.endswith((".mp4", ".jpg", ".png", ".jpeg", ".webp")):
-                    return u
+                val = item.get(key)
+    
+                if isinstance(val, str) and val.startswith("http"):
+                    return val
+    
+                if isinstance(val, dict):
+                    inner = extract_url(val)
+                    if inner:
+                        return inner
+    
         return None
+
 
     # LISTA
     if isinstance(output, list):
