@@ -253,7 +253,7 @@ async def generate_kling_video(
 @app.post("/generate-gen4")
 async def generate_gen4_video(
     prompt: str = Form(...),
-    duration: str = Form("5"),
+    duration: int = Form(5),
     aspect_ratio: str = Form("16:9"),
     
     reference_file: Optional[UploadFile] = File(None)
@@ -286,7 +286,7 @@ async def generate_gen4_video(
 
         print("✅ CLOUDINARY URL:", image_url)
 
-        model_input["input_reference"] = image_url
+        model_input["image"] = image_url
     else:
         print("⚠️ NO IMAGE RECEIVED")
 
