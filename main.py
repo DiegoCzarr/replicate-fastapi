@@ -781,6 +781,7 @@ def get_user_credits(member_id: str):
 
 @app.get("/status/{prediction_id}")
 async def prediction_status(prediction_id: str):
+    db = SessionLocal()
     prediction = replicate.predictions.get(prediction_id)
 
     output_url = None
@@ -867,7 +868,7 @@ async def prediction_status(prediction_id: str):
 def check_status(prediction_id: str):
     prediction = replicate.predictions.get(prediction_id)
 
-    if prediction.status == "succeeded":
+    if prediction.status == "succeeded" and output_url:
         meta = PREDICTION_META.get(prediction_id)
         if meta:
             final_upload = cloudinary.uploader.upload(prediction.output[0], folder="gallery")
@@ -903,7 +904,7 @@ def my_creations(member_id: str):
         {
             "id": c.id,
             "prompt": c.prompt,
-            "image": c.result_url,
+            "image": c.image_url,
             "created_at": c.created_at
         }
         for c in creations
