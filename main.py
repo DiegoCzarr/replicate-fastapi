@@ -2,7 +2,7 @@ import os
 import replicate
 import requests
 from datetime import datetime
-from fastapi import FastAPI, UploadFile, Form, File, Request
+from fastapi import FastAPI, UploadFile, Form, File, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
@@ -11,6 +11,8 @@ import cloudinary.uploader
 import cloudinary.api
 from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime
 from sqlalchemy.orm import sessionmaker, declarative_base
+import hmac
+import hashlib
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 engine = create_engine(DATABASE_URL)
@@ -901,12 +903,29 @@ def my_creations(member_id: str):
 # =========================================
 # MEMBERSTACK WEBHOOK (ADD CREDITS)
 # =========================================
+WEBHOOK_SECRET = os.getenv("MEMBERSTACK_WEBHOOK_SECRET")
+
+
+def verify_memberstack_signature(raw_body: bytes, signature: str):
+    expected_signature = hmac.new(
+        WEBHOOK_SECRET.encode(),
+        raw_body,
+        hashlib.sha256
+    ).hexdigest()
+
+    return hmac.compare_digest(expected_signature, signature)
+
+
 @app.post("/memberstack-webhook")
 async def memberstack_webhook(request: Request):
-    
-    data = await request.json()
 
-    print("📩 WEBHOOK:", data)
+    raw_body = await request.body()
+    signature = request.headers.get("x-memberstack-signature")
+
+    if not signature or not verify_memberstack_signature(raw_body, signature):
+        raise HTTPException(status_code=401, detail="Invalid webhook signature")
+
+    data = await request.json()
 
     event = data.get("type")
     member = data.get("data", {}).get("member", {})
@@ -932,10 +951,9 @@ async def memberstack_webhook(request: Request):
         user.credits += credits
         db.commit()
 
-    if event == "subscription.canceled":
-        print("⚠️ Subscription canceled:", member_id)
+    db.close()
 
-    return {"status": "ok"}
+    return {"status": "secure webhook processed"}
 
 # =========================================
 # HEALTH CHECK
