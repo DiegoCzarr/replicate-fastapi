@@ -893,12 +893,21 @@ def check_status(prediction_id: str):
 @app.get("/my-creations/{member_id}")
 def my_creations(member_id: str):
     db = SessionLocal()
-    creations = db.query(Creation) \
-        .filter(Creation.memberstack_id == member_id) \
-        .order_by(Creation.created_at.desc()) \
+    creations = db.query(Creation)\
+        .filter(Creation.memberstack_id == member_id)\
+        .order_by(Creation.created_at.desc())\
         .all()
     db.close()
-    return creations
+
+    return [
+        {
+            "id": c.id,
+            "prompt": c.prompt,
+            "image": c.result_url,
+            "created_at": c.created_at
+        }
+        for c in creations
+    ]
 
 # =========================================
 # MEMBERSTACK WEBHOOK (ADD CREDITS)
