@@ -1,14 +1,47 @@
 import os
 import replicate
 import requests
-from fastapi import FastAPI, UploadFile, Form, File
+from datetime import datetime
+from fastapi import FastAPI, UploadFile, Form, File, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
 import cloudinary
 import cloudinary.uploader
 import cloudinary.api
+from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime
+from sqlalchemy.orm import sessionmaker, declarative_base
 
+DATABASE_URL = os.getenv("DATABASE_URL")
+engine = create_engine(DATABASE_URL)
+SessionLocal = sessionmaker(bind=engine)
+Base = declarative_base()
+
+# =========================================
+# MODELS
+# =========================================
+class User(Base):
+    __tablename__ = "users"
+    id = Column(Integer, primary_key=True)
+    memberstack_id = Column(String, unique=True)
+    email = Column(String)
+    credits = Column(Integer, default=50)
+
+class Creation(Base):
+    __tablename__ = "creations"
+    id = Column(Integer, primary_key=True)
+    memberstack_id = Column(String)
+    prompt = Column(Text)
+    model = Column(String)
+    result_url = Column(Text)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+Base.metadata.create_all(bind=engine)
+
+# =========================================
+# CLOUDINARY
+# =========================================
+cloudinary.config(secure=True)
 
 load_dotenv()
 
@@ -26,6 +59,16 @@ GEN4_TEMP_IMAGES = {}
 os.environ["REPLICATE_API_TOKEN"] = os.getenv("REPLICATE_API_TOKEN")
 
 app = FastAPI()
+PREDICTION_META = {}
+
+def get_user(db, member_id):
+    user = db.query(User).filter(User.memberstack_id == member_id).first()
+    if not user:
+        user = User(memberstack_id=member_id, credits=50)
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+    return user
 
 # CORS
 app.add_middleware(
@@ -431,23 +474,34 @@ async def generate_veo_fast(
 @app.post("/generate-image")
 async def generate_image(
     prompt: str = Form(...),
+    member_id: str = Form(...),
     aspect_ratio: str = Form("16:9"),
     input_images: List[UploadFile] = File(None)
 ):
+    db = SessionLocal()
+    user = get_user(db, member_id)
+
+    if user.credits <= 0:
+        db.close()
+        return JSONResponse(status_code=403, content={"error": "Créditos insuficientes."})
+    
     image_urls = []
     public_ids = []
 
     # 🔹 Upload opcional de imagens
+    image_urls = []
     if input_images:
         print("📥 QTD IMAGENS:", len(input_images))
         print("📥 NOMES:", [img.filename for img in input_images])
 
         for image in input_images:
-            upload = cloudinary.uploader.upload(
-                image.file,
-                folder="nanobanana-temp",
-                resource_type="image"
-            )
+            
+            #upload = cloudinary.uploader.upload(
+                #image.file,
+                #folder="nanobanana-temp",
+                #resource_type="image"
+            #)
+            upload = cloudinary.uploader.upload(await image.read(), folder="nanobanana-temp", resource_type="image")
 
             image_urls.append(upload["secure_url"])
             public_ids.append(upload["public_id"])
@@ -464,6 +518,16 @@ async def generate_image(
         model="google/nano-banana",
         input=model_input
     )
+    
+    user.credits -= 1
+    db.commit()
+    db.close()
+
+    PREDICTION_META[prediction.id] = {
+        "member_id": member_id,
+        "prompt": prompt,
+        "model": "flux-kontext-pro"
+    }
 
     # 🔹 Salva imagens temporárias para limpeza futura
     NANOBANANA_TEMP_IMAGES[prediction.id] = public_ids
@@ -699,6 +763,15 @@ async def generate_flux(
         "status": prediction.status
     }
 
+@app.get("/user-credits/{member_id}")
+def get_user_credits(member_id: str):
+    db = SessionLocal()
+    user = db.query(User).filter(User.memberstack_id == member_id).first()
+
+    if not user:
+        return {"credits": 0}
+
+    return {"credits": user.credits}
 
 # =====================================================
 #                     STATUS / POLLING
@@ -784,6 +857,92 @@ async def prediction_status(prediction_id: str):
         "logs": prediction.logs,
     }
 
+
+# =========================================
+# CHECK STATUS
+# =========================================
+@app.get("/status/{prediction_id}")
+def check_status(prediction_id: str):
+    prediction = replicate.predictions.get(prediction_id)
+
+    if prediction.status == "succeeded":
+        meta = PREDICTION_META.get(prediction_id)
+        if meta:
+            final_upload = cloudinary.uploader.upload(prediction.output[0], folder="gallery")
+            db = SessionLocal()
+            creation = Creation(
+                memberstack_id=meta["member_id"],
+                prompt=meta["prompt"],
+                model=meta["model"],
+                result_url=final_upload["secure_url"]
+            )
+            db.add(creation)
+            db.commit()
+            db.close()
+            del PREDICTION_META[prediction_id]
+
+        return {"status": "done", "image": prediction.output[0]}
+
+    return {"status": prediction.status}
+
+# =========================================
+# USER GALLERY
+# =========================================
+@app.get("/my-creations/{member_id}")
+def my_creations(member_id: str):
+    db = SessionLocal()
+    creations = db.query(Creation) \
+        .filter(Creation.memberstack_id == member_id) \
+        .order_by(Creation.created_at.desc()) \
+        .all()
+    db.close()
+    return creations
+
+# =========================================
+# MEMBERSTACK WEBHOOK (ADD CREDITS)
+# =========================================
+@app.post("/memberstack-webhook")
+async def memberstack_webhook(request: Request):
+    
+    data = await request.json()
+
+    print("📩 WEBHOOK:", data)
+
+    event = data.get("type")
+    member = data.get("data", {}).get("member", {})
+    plan = data.get("data", {}).get("plan", {})
+
+    member_id = member.get("id")
+    credits = plan.get("metadata", {}).get("credits", 0)
+
+    if not member_id:
+        return {"status": "no member id"}
+
+    db = SessionLocal()
+
+    user = db.query(User).filter(User.memberstack_id == member_id).first()
+
+    if not user:
+        user = User(memberstack_id=member_id, credits=0)
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
+    if event in ["subscription.created", "subscription.renewed"]:
+        user.credits += credits
+        db.commit()
+
+    if event == "subscription.canceled":
+        print("⚠️ Subscription canceled:", member_id)
+
+    return {"status": "ok"}
+
+# =========================================
+# HEALTH CHECK
+# =========================================
+@app.get("/")
+def root():
+    return {"status": "API running"}
 
 # =====================================================
 #                   DOWNLOAD OPCIONAL
