@@ -505,7 +505,7 @@ async def generate_nanobanana_2(
         for image in image_input:
             upload = cloudinary.uploader.upload(
                 await image.read(),
-                folder="nanobanana2-temp",
+                folder="nanobanana-temp",
                 resource_type="image"
             )
             image_urls.append(upload["secure_url"])
