@@ -467,7 +467,98 @@ async def generate_veo_fast(
         "status": prediction.status
     }
 
+# =====================================================#
+#                NANO-BANANA 2 - IMAGEM#
+# =====================================================#
 
+@app.post("/generate-nanobanana-2")
+async def generate_nanobanana_2(
+    prompt: str = Form(...),
+    member_id: str = Form(...),
+    aspect_ratio: str = Form("1:1"),
+    resolution: str = Form("1K"),
+    image_search: bool = Form(False),
+    google_search: bool = Form(False),
+    output_format: str = Form("jpg"),
+    image_input: List[UploadFile] = File(None)
+):
+    db = SessionLocal()
+    user = get_user(db, member_id)
+
+    if not user:
+        db.close()
+        return JSONResponse(status_code=404, content={"error": "User not found."})
+
+    if user.credits <= 0:
+        db.close()
+        return JSONResponse(status_code=403, content={"error": "Créditos insuficientes."})
+
+    # ==========================
+    # Upload opcional para Cloudinary
+    # ==========================
+    image_urls = []
+    public_ids = []
+
+    if image_input:
+        print("📥 QTD IMAGENS:", len(image_input))
+
+        for image in image_input:
+            upload = cloudinary.uploader.upload(
+                await image.read(),
+                folder="nanobanana2-temp",
+                resource_type="image"
+            )
+            image_urls.append(upload["secure_url"])
+            public_ids.append(upload["public_id"])
+
+    print("✅ URLs enviadas ao Nano Banana 2:", image_urls)
+
+    # ==========================
+    # Modelo Nano Banana 2
+    # ==========================
+    model_input = {
+        "prompt": prompt,
+        "resolution": resolution,
+        "image_input": image_urls,
+        "aspect_ratio": aspect_ratio,
+        "image_search": image_search,
+        "google_search": google_search,
+        "output_format": output_format
+    }
+
+    prediction = replicate.predictions.create(
+        model="google/nano-banana-2",
+        input=model_input
+    )
+
+    # ==========================
+    # Desconta créditos (ajuste como quiser)
+    # ==========================
+    if resolution == "1K":
+        cost = 1
+    elif resolution == "2K":
+        cost = 2
+    elif resolution == "4K":
+        cost = 3
+    else:
+        cost = 1
+
+    user.credits -= cost
+    db.commit()
+    db.close()
+
+    PREDICTION_META[prediction.id] = {
+        "member_id": member_id,
+        "prompt": prompt,
+        "model": "google/nano-banana-2"
+    }
+
+    NANOBANANA_TEMP_IMAGES[prediction.id] = public_ids
+
+    return {
+        "prediction_id": prediction.id,
+        "status": prediction.status
+    }
 
 # =====================================================
 #                NANO-BANANA - IMAGEM
