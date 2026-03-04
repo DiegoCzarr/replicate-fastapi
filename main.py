@@ -873,111 +873,60 @@ def get_user_credits(member_id: str):
 @app.get("/status/{prediction_id}")
 async def prediction_status(prediction_id: str):
     db = SessionLocal()
+
+    creation = db.query(Creation)\
+        .filter(Creation.replicate_id == prediction_id)\
+        .first()
+
+    if not creation:
+        db.close()
+        return {"error": "Prediction not found"}
+
+    # Se já foi concluído, não processa de novo
+    if creation.status == "succeeded":
+        db.close()
+        return {
+            "status": "succeeded",
+            "output_url": creation.result_url
+        }
+
     prediction = replicate.predictions.get(prediction_id)
 
     output_url = None
-    output = prediction.output
-    
 
-    def extract_url(item):
-        if not item:
-            return None
-    
-        # string direta
-        if isinstance(item, str) and item.startswith("http"):
-            return item
-    
-        # dict
-        if isinstance(item, dict):
-            for key in ["video", "output", "url", "image", "output_video"]:
-                val = item.get(key)
-    
-                if isinstance(val, str) and val.startswith("http"):
-                    return val
-    
-                if isinstance(val, dict):
-                    inner = extract_url(val)
-                    if inner:
-                        return inner
-    
-        return None
+    if prediction.output:
+        if isinstance(prediction.output, list):
+            output_url = prediction.output[0]
+        elif isinstance(prediction.output, str):
+            output_url = prediction.output
 
+    # 🔥 Se concluiu agora
+    if prediction.status == "succeeded" and output_url:
 
-    # LISTA
-    if isinstance(output, list):
-        for item in output:
-            url = extract_url(item)
-            if url:
-                output_url = url
-                break
-
-    # DICIONÁRIO
-    elif isinstance(output, dict):
-        output_url = extract_url(output)
-
-    # STRING
-    elif isinstance(output, str):
-        output_url = extract_url(output)
-
-    print("DEBUG OUTPUT:", output)
-    print("FINAL URL:", output_url)
-
-        # 🔥 Cleanup Cloudinary quando finalizar
-    if prediction.status in ["succeeded", "failed"]:
-        public_id = (
-            FLUX_TEMP_IMAGES.pop(prediction_id, None)
-            or SORA2_TEMP_IMAGES.pop(prediction_id, None)
-            or SORA2_PRO_TEMP_IMAGES.pop(prediction_id, None)
-            or VEO3_TEMP_IMAGES.pop(prediction_id, None)
-            or SEEDREAM_TEMP_IMAGES.pop(prediction_id, None)
-            or NANOBANANA_TEMP_IMAGES.pop(prediction_id, None)
-            or KLING_TEMP_IMAGES.pop(prediction_id, None)
-            or GEN4_TEMP_IMAGES.pop(prediction_id, None)
+        final_upload = cloudinary.uploader.upload(
+            output_url,
+            folder="gallery",
+            resource_type="auto"
         )
 
+        creation.status = "succeeded"
+        creation.result_url = final_upload["secure_url"]
+        creation.completed_at = datetime.utcnow()
 
-        if public_id:
-            try:
-                cloudinary.uploader.destroy(public_id)
-                print(f"[CLOUDINARY] Deleted temp image: {public_id}")
-            except Exception as e:
-                print(f"[CLOUDINARY ERROR] {e}")
+        db.commit()
 
+    elif prediction.status == "failed":
+        creation.status = "failed"
+        db.commit()
+
+    db.close()
 
     return {
-        "id": prediction.id,
         "status": prediction.status,
-        "output_url": output_url,
-        "logs": prediction.logs,
+        "output_url": creation.result_url
     }
 
 
-# =========================================
-# CHECK STATUS
-# =========================================
-@app.get("/status/{prediction_id}")
-def check_status(prediction_id: str):
-    prediction = replicate.predictions.get(prediction_id)
-
-    if prediction.status == "succeeded" and output_url:
-        meta = PREDICTION_META.get(prediction_id)
-        if meta:
-            final_upload = cloudinary.uploader.upload(prediction.output[0], folder="gallery")
-            db = SessionLocal()
-            creation = Creation(
-                memberstack_id=meta["member_id"],
-                prompt=meta["prompt"],
-                model=meta["model"],
-                result_url=final_upload["secure_url"]
-            )
-            db.add(creation)
-            db.commit()
-            db.close()
-            del PREDICTION_META[prediction_id]
-
-        return {"status": "done", "image": prediction.output[0]}
-
-    return {"status": prediction.status}
 
 # =========================================
 # USER GALLERY
