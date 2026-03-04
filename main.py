@@ -2,7 +2,7 @@ import os
 import replicate
 import requests
 from datetime import datetime
-from fastapi import FastAPI, UploadFile, Form, File, Request, HTTPException
+from fastapi import FastAPI, UploadFile, Form, File, Request, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
@@ -10,7 +10,7 @@ import cloudinary
 import cloudinary.uploader
 import cloudinary.api
 from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, JSON
-from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy.orm import sessionmaker, declarative_base, Session
 import hmac
 import hashlib
 
@@ -29,6 +29,12 @@ engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(bind=engine)
 Base = declarative_base()
 
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 # =========================================
 # MODELS
 # =========================================
@@ -936,11 +942,14 @@ async def prediction_status(prediction_id: str):
         creation.status = "failed"
         db.commit()
 
+    final_status = creation.status
+    final_output = creation.result_url
+    
     db.close()
 
     return {
-        "status": prediction.status,
-        "output_url": creation.result_url
+        "status": final_status,
+        "output_url": final_output
     }
 
 
