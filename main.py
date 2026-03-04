@@ -14,6 +14,16 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 import hmac
 import hashlib
 
+WEBHOOK_SECRET = os.getenv("REPLICATE_WEBHOOK_SECRET")
+
+def verify_replicate_signature(raw_body: bytes, signature: str):
+    expected = hmac.new(
+        WEBHOOK_SECRET.encode(),
+        raw_body,
+        hashlib.sha256
+    ).hexdigest()
+
+    return hmac.compare_digest(expected, signature)
 DATABASE_URL = os.getenv("DATABASE_URL")
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(bind=engine)
@@ -37,6 +47,7 @@ class Creation(Base):
     model = Column(String)
     result_url = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)
+    temp_input_public_ids = Column(JSON, nullable=True)
 
 Base.metadata.create_all(bind=engine)
 
@@ -578,7 +589,6 @@ async def generate_image(
         db.close()
         return JSONResponse(status_code=403, content={"error": "Créditos insuficientes."})
     
-    image_urls = []
     public_ids = []
 
     # 🔹 Upload opcional de imagens
@@ -609,25 +619,29 @@ async def generate_image(
 
     prediction = replicate.predictions.create(
         model="google/nano-banana",
-        input=model_input
+        input=model_input,
+        webhook="https://SEU-DOMINIO.onrender.com/replicate-webhook",
+        webhook_events_filter=["completed"]
     )
-    
+
+    creation = Creation(
+        memberstack_id=member_id,
+        replicate_id=prediction.id,
+        prompt=prompt,
+        model="google/nano-banana",
+        status="processing",
+        temp_input_public_ids=public_ids
+    )
+
+    db.add(creation)
     user.credits -= 1
     db.commit()
     db.close()
 
-    PREDICTION_META[prediction.id] = {
-        "member_id": member_id,
-        "prompt": prompt,
-        "model": "flux-kontext-pro"
-    }
-
-    # 🔹 Salva imagens temporárias para limpeza futura
-    NANOBANANA_TEMP_IMAGES[prediction.id] = public_ids
 
     return {
         "prediction_id": prediction.id,
-        "status": prediction.status
+        "status": "processing"
     }
 
 @app.post("/generate-nano-pro")
@@ -927,7 +941,76 @@ async def prediction_status(prediction_id: str):
     }
 
 
+@app.post("/replicate-webhook")
+async def replicate_webhook(request: Request):
 
+    payload = await request.json()
+
+    prediction_id = payload.get("id")
+    status = payload.get("status")
+    output = payload.get("output")
+
+    db = SessionLocal()
+
+    creation = db.query(Creation)\
+        .filter(Creation.replicate_id == prediction_id)\
+        .first()
+
+    if not creation:
+        db.close()
+        return {"status": "not found"}
+
+    # 🔒 Proteção contra duplicação
+    if creation.status == "succeeded":
+        db.close()
+        return {"status": "already processed"}
+
+    if status == "failed":
+        creation.status = "failed"
+        db.commit()
+        db.close()
+        return {"status": "updated failed"}
+
+    if status == "succeeded":
+    
+        if creation.status == "succeeded":
+            db.close()
+            return {"status": "already processed"}
+    
+        output_url = None
+    
+        if isinstance(output, list):
+            output_url = output[0]
+        elif isinstance(output, str):
+            output_url = output
+    
+        if output_url:
+    
+            final_upload = cloudinary.uploader.upload(
+                output_url,
+                folder="gallery",
+                resource_type="auto"
+            )
+    
+            creation.status = "succeeded"
+            creation.result_url = final_upload["secure_url"]
+            creation.completed_at = datetime.utcnow()
+    
+            # 🔥 CLEANUP TEMP IMAGES
+            if creation.temp_input_public_ids:
+                for public_id in creation.temp_input_public_ids:
+                    try:
+                        cloudinary.uploader.destroy(public_id)
+                    except Exception as e:
+                        print("Cloudinary cleanup error:", e)
+    
+            creation.temp_input_public_ids = None  # limpa campo
+    
+            db.commit()
+
+    db.close()
+
+    return {"status": "processed"}
 # =========================================
 # USER GALLERY
 # =========================================
