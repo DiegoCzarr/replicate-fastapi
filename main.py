@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 import cloudinary
 import cloudinary.uploader
 import cloudinary.api
-from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime
+from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, JSON
 from sqlalchemy.orm import sessionmaker, declarative_base
 import hmac
 import hashlib
@@ -45,7 +45,9 @@ class Creation(Base):
     memberstack_id = Column(String)
     prompt = Column(Text)
     model = Column(String)
+    status = Column(String)
     result_url = Column(Text)
+    output_urls = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)
     temp_input_public_ids = Column(JSON, nullable=True)
 
@@ -1027,7 +1029,8 @@ def my_creations(member_id: str):
         {
             "id": c.id,
             "prompt": c.prompt,
-            "image": c.image_url,
+            "status": c.status,
+            "image": c.result_url,
             "created_at": c.created_at
         }
         for c in creations
