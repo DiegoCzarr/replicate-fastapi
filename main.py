@@ -43,6 +43,7 @@ class Creation(Base):
     __tablename__ = "creations"
     id = Column(Integer, primary_key=True)
     memberstack_id = Column(String)
+    replicate_id = Column(String)
     prompt = Column(Text)
     model = Column(String)
     status = Column(String)
