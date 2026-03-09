@@ -1108,6 +1108,27 @@ async def memberstack_webhook(request: Request):
 def root():
     return {"status": "API running"}
 
+
+
+@app.delete("/delete-creation/{creation_id}/{member_id}")
+async def delete_creation(creation_id: int, member_id: str):
+
+    db = SessionLocal()
+
+    creation = db.query(Creation).filter(
+        Creation.id == creation_id,
+        Creation.member_id == member_id
+    ).first()
+
+    if not creation:
+        db.close()
+        return {"error": "Not found"}
+
+    db.delete(creation)
+    db.commit()
+    db.close()
+
+    return {"success": True}
 # =====================================================
 #                   DOWNLOAD OPCIONAL
 # =====================================================
